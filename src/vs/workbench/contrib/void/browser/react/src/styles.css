@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+& {
+	--void-bg-1: var(--vscode-sideBar-background);
+	--void-bg-1-alt: var(--vscode-input-background);
+	--void-bg-2: var(--vscode-input-background);
+	--void-bg-2-alt: var(--vscode-list-hoverBackground);
+	--void-bg-2-hover: var(--vscode-list-hoverBackground);
+	--void-bg-3: var(--vscode-editorWidget-background);
+
+	--void-fg-0: var(--vscode-foreground);
+	--void-fg-1: var(--vscode-foreground);
+	--void-fg-2: var(--vscode-descriptionForeground);
+	--void-fg-3: var(--vscode-descriptionForeground);
+	--void-fg-4: var(--vscode-disabledForeground);
+
+	--void-warning: var(--vscode-editorWarning-foreground);
+
+	--void-border-1: var(--vscode-focusBorder);
+	--void-border-2: var(--vscode-widget-border);
+	--void-border-3: var(--vscode-widget-border);
+	--void-border-4: var(--vscode-widget-border);
+
+	--void-ring-color: var(--vscode-focusBorder);
+	--void-link-color: var(--vscode-textLink-foreground);
+}
+
+@keyframes void-word-in {
+	0% { opacity: 0; transform: translateY(18px) scale(0.94); filter: blur(6px); }
+	60% { filter: blur(0); }
+	100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes void-logo-in {
+	0% { opacity: 0; transform: scale(0.75) translateY(14px); filter: blur(8px); }
+	55% { opacity: 1; filter: blur(0); }
+	75% { transform: scale(1.05) translateY(0); }
+	100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+}
+
+@keyframes void-logo-glow {
+	0%, 100% { filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0)); }
+	50% { filter: drop-shadow(0 0 22px rgba(255, 255, 255, 0.22)); }
+}
+
+.select-child-restyle select {
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	padding-right: 24px;
+}
+
+.void-force-child-placeholder-void-fg-1 ::placeholder {
+	color: var(--void-fg-3);
+}
+
+* {
+	outline: none !important;
+}
+
+
+
+.inherit-bg-all-restyle > * {
+	background-color: inherit !important;
+}
+
+
+.bg-editor-style-override {
+	--vscode-sideBar-background: var(--vscode-editor-background);
+}
+
+
+
+/* html {
+	font-size: var(--vscode-font-size);
+}
+
+.btn {
+	@apply cursor-pointer transition-colors;
+
+	&.btn-primary {
+		@apply bg-vscode-button-bg text-vscode-button-fg;
+
+		&:not(:disabled) {
+			@apply hover:bg-vscode-button-hoverBg;
+		}
+	}
+
+	&.btn-sm {
+		@apply px-3 py-1 text-sm;
+	}
+
+	&.btn-secondary {
+		@apply bg-vscode-button-secondary-bg text-vscode-button-secondary-fg;
+
+		&:not(:disabled) {
+			@apply hover:bg-vscode-button-secondary-hoverBg;
+		}
+	}
+
+	&:disabled {
+		@apply opacity-75 cursor-not-allowed;
+	}
+}
+
+.input {
+	@apply bg-vscode-input-bg text-vscode-input-fg border-vscode-input-border focus:outline-vscode-focus-border;
+}
+
+.dropdown {
+	@apply bg-vscode-dropdown-bg text-vscode-dropdown-foreground border-vscode-dropdown-border focus:outline-vscode-focus-border;
+} */

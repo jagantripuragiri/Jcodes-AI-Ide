@@ -63,16 +63,16 @@ async function getDependencies(packageType, buildDir, applicationName, arch) {
     files.push(appPath);
     // Add chrome sandbox and crashpad handler.
     files.push(path_1.default.join(buildDir, 'chrome-sandbox'));
-    files.push(path_1.default.join(buildDir, 'chrome_crashpad_handler'));
     // Generate the dependencies.
+    const existingFiles = files.filter(f => f && (0, fs_1.existsSync)(f));
     let dependencies;
     if (packageType === 'deb') {
         const chromiumSysroot = await (0, install_sysroot_1.getChromiumSysroot)(arch);
         const vscodeSysroot = await (0, install_sysroot_1.getVSCodeSysroot)(arch);
-        dependencies = (0, calculate_deps_1.generatePackageDeps)(files, arch, chromiumSysroot, vscodeSysroot);
+        dependencies = (0, calculate_deps_1.generatePackageDeps)(existingFiles, arch, chromiumSysroot, vscodeSysroot);
     }
     else {
-        dependencies = (0, calculate_deps_2.generatePackageDeps)(files);
+        dependencies = (0, calculate_deps_2.generatePackageDeps)(existingFiles);
     }
     // Merge all the dependencies.
     const mergedDependencies = mergePackageDeps(dependencies);

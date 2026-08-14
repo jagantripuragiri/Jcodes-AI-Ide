@@ -1,4 +1,4 @@
-name: Build and Release J Code's (Apple Silicon & Windows)
+name: Build and Release J Code's (Mac, Windows, Linux)
 
 on:
   push:
@@ -59,10 +59,10 @@ jobs:
           path: J-Codes-darwin-arm64.zip
 
   # ==========================================
-  # 🪟 Windows: 64-bit (Installer .exe + Portable .zip)
+  # 🪟 Windows: 64-bit Setup Installer (.exe)
   # ==========================================
   build-windows:
-    name: 🪟 Windows (x64 Installer & Portable)
+    name: 🪟 Windows (x64 Installer)
     runs-on: windows-2022
     steps:
       - name: Checkout repository
@@ -92,16 +92,13 @@ jobs:
       - name: Build InnoSetup Windows Installer (.exe)
         run: node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-win32-x64-user-setup
 
-      - name: Prepare Windows Installer & ZIP
+      - name: Prepare Windows Installer
         shell: pwsh
         run: |
-          # Copy and rename User Setup installer
           $setupExe = Get-ChildItem -Path ".build\win32-x64\user-setup\*.exe" | Select-Object -First 1
           if ($setupExe) {
             Copy-Item $setupExe.FullName -Destination "${{ github.workspace }}\J-Codes-UserSetup-x64.exe"
           }
-          # Compress portable folder
-          Compress-Archive -Path "..\VSCode-win32-x64\*" -DestinationPath "${{ github.workspace }}\J-Codes-win32-x64.zip"
 
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
@@ -109,18 +106,62 @@ jobs:
           name: J-Codes-Windows-Installer
           path: J-Codes-UserSetup-x64.exe
 
-      - name: Upload Windows Portable ZIP
+  # ==========================================
+  # 🐧 Linux: Debian / Ubuntu (.deb package)
+  # ==========================================
+  build-linux:
+    name: 🐧 Linux (x64 .deb Package)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libkrb5-dev libx11-dev libxkbfile-dev libsecret-1-dev fakeroot dpkg-dev
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Dependencies
+        run: |
+          export ELECTRON_SKIP_BINARY_DOWNLOAD=1
+          export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+          npm install
+
+      - name: Build React Components
+        run: npm run buildreact
+
+      - name: Compile and Package Linux App
+        run: node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-linux-x64
+
+      - name: Prepare and Build Debian .deb Package
+        run: |
+          node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-linux-x64-prepare-deb
+          node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-linux-x64-build-deb
+
+      - name: Prepare Linux .deb Artifact
+        run: |
+          debFile=$(find .build/linux/deb/amd64/deb/ -name "*.deb" | head -n 1)
+          if [ -f "$debFile" ]; then
+            cp "$debFile" "${{ github.workspace }}/j-codes_amd64.deb"
+          fi
+
+      - name: Upload Linux .deb
         uses: actions/upload-artifact@v4
         with:
-          name: J-Codes-win32-x64
-          path: J-Codes-win32-x64.zip
+          name: J-Codes-Linux-deb
+          path: j-codes_amd64.deb
 
   # ==========================================
   # 🚀 Publish Release to GitHub
   # ==========================================
   release:
     name: 🚀 Publish Official GitHub Release
-    needs: [build-macos-arm64, build-windows]
+    needs: [build-macos-arm64, build-windows, build-linux]
     if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true' || github.event.inputs.create_release == true
     runs-on: ubuntu-latest
     steps:
@@ -150,6 +191,6 @@ jobs:
           files: |
             ./dist/J-Codes-darwin-arm64.zip
             ./dist/J-Codes-UserSetup-x64.exe
-            ./dist/J-Codes-win32-x64.zip
+            ./dist/j-codes_amd64.deb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -28,7 +28,7 @@ Download the latest version of **J Code's** for your operating system:
 | :--- | :--- | :--- | :--- |
 | 🍏 **macOS** | **Apple Silicon (M1 / M2 / M3 / M4)** | App Bundle (`.zip`) | [**⬇️ Download for Apple Silicon (.zip)**](https://github.com/jagantripuragiri/Jcodes-AI-Ide/releases/latest/download/J-Codes-darwin-arm64.zip) |
 | 🪟 **Windows** | **64-bit (x64)** | Setup Installer (`.exe`) | [**⬇️ Download Windows Installer (.exe)**](https://github.com/jagantripuragiri/Jcodes-AI-Ide/releases/latest/download/J-Codes-UserSetup-x64.exe) |
-| 🪟 **Windows** | **64-bit (x64)** | Portable (`.zip`) | [**⬇️ Download Windows Portable (.zip)**](https://github.com/jagantripuragiri/Jcodes-AI-Ide/releases/download/v1.4.9/J-Codes-win32-x64.zip) |
+| 🐧 **Linux** | **Debian / Ubuntu (x64)** | `.deb` Package | [**⬇️ Download Linux Debian (.deb)**](https://github.com/jagantripuragiri/Jcodes-AI-Ide/releases/latest/download/j-codes_amd64.deb) |
 
 > 💡 *Or view all assets on the [GitHub Releases page](https://github.com/jagantripuragiri/Jcodes-AI-Ide/releases).*
 
@@ -50,27 +50,20 @@ Download the latest version of **J Code's** for your operating system:
 ---
 
 ### 🪟 Windows (10 / 11)
-#### Portable Version (`.zip`):
-1. Download `J-Codes-win32-x64.zip`.
-2. Right-click the `.zip` file and select **"Extract All..."**.
-3. Open the extracted folder and double-click **`J code's.exe`** to launch the editor.
-4. *(Optional)* Right-click `J code's.exe` ➔ **"Show more options"** ➔ **"Send to"** ➔ **"Desktop (create shortcut)"**.
-
-#### Installer Version (`.exe`):
-1. Run the `J-Codes-Setup-x64.exe` installer and follow the on-screen instructions.
-2. If Windows SmartScreen shows *"Windows protected your PC"*, click **"More info"** ➔ **"Run anyway"**.
+1. Download and run **`J-Codes-UserSetup-x64.exe`**.
+2. Follow the on-screen installer instructions.
+3. If Windows SmartScreen displays *"Windows protected your PC"*, click **"More info"** ➔ **"Run anyway"**.
+4. The installer creates Desktop & Start Menu shortcuts automatically.
 
 ---
 
-### 🐧 Linux (Ubuntu, Debian, Fedora, Arch)
-```bash
-# Debian / Ubuntu (.deb)
-sudo dpkg -i j-codes_amd64.deb
-
-# Or extract tarball
-tar -xzf J-Codes-linux-x64.tar.gz
-cd J-Codes-linux-x64 && ./j-codes
-```
+### 🐧 Linux (Ubuntu, Debian)
+1. Download **`j-codes_amd64.deb`**.
+2. Install via terminal:
+   ```bash
+   sudo dpkg -i j-codes_amd64.deb
+   sudo apt-get install -f   # Fix any missing dependencies
+   ```
 
 ---
 

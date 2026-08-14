@@ -15,7 +15,8 @@ const path_1 = __importDefault(require("path"));
 const cgmanifest_json_1 = __importDefault(require("../../../cgmanifest.json"));
 const dep_lists_1 = require("./dep-lists");
 function generatePackageDeps(files, arch, chromiumSysroot, vscodeSysroot) {
-    const dependencies = files.map(file => calculatePackageDeps(file, arch, chromiumSysroot, vscodeSysroot));
+    const existingFiles = files.filter(file => (0, fs_1.existsSync)(file));
+    const dependencies = existingFiles.map(file => calculatePackageDeps(file, arch, chromiumSysroot, vscodeSysroot));
     const additionalDepsSet = new Set(dep_lists_1.additionalDeps);
     dependencies.push(additionalDepsSet);
     return dependencies;

@@ -94,6 +94,7 @@ export const defaultModelsOfProvider = {
 		'grok-3-mini-fast'
 	],
 	gemini: [ // https://ai.google.dev/gemini-api/docs/models/gemini
+		'gemini-3.7-flash',
 		'gemini-3.6-flash',
 		'gemini-3.5-flash',
 		'gemini-3.5-flash-lite',
@@ -401,6 +402,7 @@ const extensiveModelOptionsFallback: VoidStaticProviderInfo['modelOptionsFallbac
 		};
 	}
 
+	if (lower.includes('gemini') && (lower.includes('3.7') || lower.includes('3-7'))) return toFallback(geminiModelOptions, 'gemini-3.7-flash')
 	if (lower.includes('gemini') && (lower.includes('3.6') || lower.includes('3-6'))) return toFallback(geminiModelOptions, 'gemini-3.6-flash')
 	if (lower.includes('gemini') && (lower.includes('3.5') || lower.includes('3-5'))) return toFallback(geminiModelOptions, 'gemini-3.5-flash')
 	if (lower.includes('gemini') && (lower.includes('2.5') || lower.includes('2-5'))) return toFallback(geminiModelOptions, 'gemini-2.5-pro')
@@ -796,6 +798,22 @@ const xAISettings: VoidStaticProviderInfo = {
 // ---------------- GEMINI ----------------
 const geminiModelOptions = { // https://ai.google.dev/gemini-api/docs/pricing
 	// https://ai.google.dev/gemini-api/docs/thinking#set-budget
+	'gemini-3.7-flash': {
+		contextWindow: 1_048_576,
+		reservedOutputTokenSpace: 8_192,
+		cost: { input: 0.75, output: 3.75 }, // introductory pricing through end of 2026
+		downloadable: false,
+		supportsFIM: false,
+		supportsSystemMessage: 'separated',
+		specialToolFormat: 'gemini-style',
+		reasoningCapabilities: {
+			supportsReasoning: true,
+			canTurnOffReasoning: true,
+			canIOReasoning: false,
+			reasoningSlider: { type: 'budget_slider', min: 1024, max: 8192, default: 1024 }, // max is really 24576
+			reasoningReservedOutputTokenSpace: 8192,
+		},
+	},
 	'gemini-3.6-flash': {
 		contextWindow: 1_048_576,
 		reservedOutputTokenSpace: 8_192,

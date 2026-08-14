@@ -24,15 +24,16 @@
 
 Download the latest version of **J Code's** for your operating system:
 
-| Platform | Architecture | Type | Download Link |
+| Platform | Architecture | Type | Direct Download Link |
 | :--- | :--- | :--- | :--- |
-| 🍏 **macOS** | **Apple Silicon (M1 / M2 / M3 / M4)** | App Bundle (`.zip`) | [**Download for Apple Silicon**](https://github.com/jagantripuragiri/J-code/releases/latest) |
-| 🍏 **macOS** | **Intel (x64)** | App Bundle (`.zip`) | [**Download for Intel Mac**](https://github.com/jagantripuragiri/J-code/releases/latest) |
-| 🪟 **Windows** | **64-bit (x64)** | Portable (`.zip`) | [**Download for Windows (Zip)**](https://github.com/jagantripuragiri/J-code/releases/latest) |
-| 🪟 **Windows** | **64-bit (x64)** | User Installer (`.exe`) | [**Download for Windows (Installer)**](https://github.com/jagantripuragiri/J-code/releases/latest) |
-| 🐧 **Linux** | **x64 / ARM64** | `.deb` / `.tar.gz` | [**Download for Linux**](https://github.com/jagantripuragiri/J-code/releases/latest) |
+| 🍏 **macOS** | **Apple Silicon (M1 / M2 / M3 / M4)** | App Bundle (`.zip`) | [**⬇️ Download for Apple Silicon (.zip)**](https://github.com/jagantripuragiri/Jcodes-AI-Ide/releases/latest/download/J-Codes-darwin-arm64.zip) |
+| 🍏 **macOS** | **Intel (x64)** | App Bundle (`.zip`) | [**⬇️ Download for Intel Mac (.zip)**](https://github.com/jagantripuragiri/Jcodes-AI-Ide/releases/latest/download/J-Codes-darwin-x64.zip) |
+| 🪟 **Windows** | **64-bit (x64)** | Setup Installer (`.exe`) | [**⬇️ Download Windows Installer (.exe)**](https://github.com/jagantripuragiri/Jcodes-AI-Ide/releases/latest/download/J-Codes-UserSetup-x64.exe) |
+| 🪟 **Windows** | **64-bit (x64)** | Portable (`.zip`) | [**⬇️ Download Windows Portable (.zip)**](https://github.com/jagantripuragiri/Jcodes-AI-Ide/releases/latest/download/J-Codes-win32-x64.zip) |
+| 🐧 **Linux** | **Debian / Ubuntu (x64)** | `.deb` Package | [**⬇️ Download Linux Debian (.deb)**](https://github.com/jagantripuragiri/Jcodes-AI-Ide/releases/latest/download/j-codes_amd64.deb) |
+| 🐧 **Linux** | **64-bit (x64)** | Portable (`.tar.gz`) | [**⬇️ Download Linux Tarball (.tar.gz)**](https://github.com/jagantripuragiri/Jcodes-AI-Ide/releases/latest/download/J-Codes-linux-x64.tar.gz) |
 
-> 💡 *Check the [GitHub Releases page](https://github.com/jagantripuragiri/J-code/releases) for changelogs, previous releases, and SHA-256 checksums.*
+> 💡 *Or view all assets on the [GitHub Releases page](https://github.com/jagantripuragiri/Jcodes-AI-Ide/releases).*
 
 ---
 

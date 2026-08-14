@@ -186,7 +186,9 @@ jobs:
         run: node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-linux-x64
 
       - name: Build Linux .deb Package
-        run: node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-linux-x64-build-deb
+        run: |
+          node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-linux-x64-prepare-deb
+          node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-linux-x64-build-deb
 
       - name: Prepare Linux Artifacts
         run: |

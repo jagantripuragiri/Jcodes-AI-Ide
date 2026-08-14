@@ -5,6 +5,7 @@
 
 'use strict';
 
+import fs from 'fs';
 import { spawnSync } from 'child_process';
 import path from 'path';
 import { getChromiumSysroot, getVSCodeSysroot } from './debian/install-sysroot';
@@ -39,15 +40,18 @@ const bundledDeps = [
 export async function getDependencies(packageType: 'deb' | 'rpm', buildDir: string, applicationName: string, arch: string): Promise<string[]> {
 	if (packageType === 'deb') {
 		if (!isDebianArchString(arch)) {
-			throw new Error('Invalid Debian arch string ' + arch);
+			throw new Error('Invalid debian architecture.');
 		}
 	}
-	if (packageType === 'rpm' && !isRpmArchString(arch)) {
-		throw new Error('Invalid RPM arch string ' + arch);
+
+	if (packageType === 'rpm') {
+		if (!isRpmArchString(arch)) {
+			throw new Error('Invalid rpm architecture.');
+		}
 	}
 
-	// Get the files for which we want to find dependencies.
-	const canAsar = false; // TODO@esm ASAR disabled in ESM
+	// Get the native modules
+	const canAsar = false; // TODO: asar support
 	const nativeModulesPath = path.join(buildDir, 'resources', 'app', canAsar ? 'node_modules.asar.unpacked' : 'node_modules');
 	const findResult = spawnSync('find', [nativeModulesPath, '-name', '*.node']);
 	if (findResult.status) {
@@ -68,13 +72,14 @@ export async function getDependencies(packageType: 'deb' | 'rpm', buildDir: stri
 	files.push(path.join(buildDir, 'chrome_crashpad_handler'));
 
 	// Generate the dependencies.
+	const existingFiles = files.filter(f => f && fs.existsSync(f));
 	let dependencies: Set<string>[];
 	if (packageType === 'deb') {
 		const chromiumSysroot = await getChromiumSysroot(arch as DebianArchString);
 		const vscodeSysroot = await getVSCodeSysroot(arch as DebianArchString);
-		dependencies = generatePackageDepsDebian(files, arch as DebianArchString, chromiumSysroot, vscodeSysroot);
+		dependencies = generatePackageDepsDebian(existingFiles, arch as DebianArchString, chromiumSysroot, vscodeSysroot);
 	} else {
-		dependencies = generatePackageDepsRpm(files);
+		dependencies = generatePackageDepsRpm(existingFiles);
 	}
 
 	// Merge all the dependencies.

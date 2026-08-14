@@ -36,6 +36,9 @@ jobs:
           node-version: 22
 
       - name: Install Dependencies
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npm_config_github_token: ${{ secrets.GITHUB_TOKEN }}
         run: |
           export ELECTRON_SKIP_BINARY_DOWNLOAD=1
           export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
@@ -78,6 +81,9 @@ jobs:
 
       - name: Install Dependencies
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npm_config_github_token: ${{ secrets.GITHUB_TOKEN }}
         run: |
           export ELECTRON_SKIP_BINARY_DOWNLOAD=1
           export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
@@ -127,6 +133,9 @@ jobs:
           node-version: 22
 
       - name: Install Dependencies
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npm_config_github_token: ${{ secrets.GITHUB_TOKEN }}
         run: |
           export ELECTRON_SKIP_BINARY_DOWNLOAD=1
           export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1

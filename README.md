@@ -38,8 +38,16 @@ Download the latest version of **J Code's** for your operating system:
 
 ### 🍏 macOS (Apple Silicon M1 / M2 / M3 / M4)
 1. Download **`J-Codes-darwin-arm64.zip`**.
+
+<img width="466.5" height="292" alt="image" src="https://github.com/user-attachments/assets/e91c1ce5-8e20-40ae-9118-f9a88b9c102f" />
+
+
 2. Double-click the downloaded `.zip` file to extract `J code's.app`.
+<img width="466.5" height="292" alt="image" src="https://github.com/user-attachments/assets/8bee5b68-d1e6-4842-a768-3d41d23dea18" />
+
 3. Drag and drop **`J code's.app`** into your `/Applications` folder.
+<img width="466.5" height="292" alt="image" src="https://github.com/user-attachments/assets/00c47cde-6bd0-4bad-a368-3cf285565dba" />
+
 4. **First Launch Note (Gatekeeper):** If macOS displays *"Apple cannot check it for malicious software"* or *"App is damaged"*:
    - Open **Terminal** and run:
      ```bash
@@ -47,7 +55,14 @@ Download the latest version of **J Code's** for your operating system:
      ```
    - *Or* Right-click **`J code's.app`** in Finder and click **Open**, then click **Open** in the dialog.
 
+
+<img width="466.5" height="292" alt="Group 1" src="https://github.com/user-attachments/assets/1ea8d306-f3e1-4977-a14a-75808585ffdd" />
+<img width="466.5" height="292" alt="image" src="https://github.com/user-attachments/assets/affcd65c-8d96-4f94-80ac-e6b8ffb95ef5" />
+
+
+
 ---
+
 
 ### 🪟 Windows (10 / 11)
 1. Download and run **`J-Codes-UserSetup-x64.exe`**.
@@ -87,56 +102,7 @@ After launching **J Code's**, open the Settings pane (`Cmd + ,` on Mac or `Ctrl 
 3. Enter your API Key or local host URL (`http://localhost:11434` for Ollama).
 4. Choose your preferred models for **Chat**, **Autocomplete**, and **Apply Edits**.
 
----
 
-## 🛠 Building from Source
-
-### Prerequisites
-- **Node.js**: `v20.18.1` or `v22.x`
-- **npm**: `v10.x` or later
-- **Python**: `3.x` (for native compilation)
-- **C/C++ Compiler Toolchain** (Xcode Command Line Tools on Mac, Visual Studio C++ Build Tools on Windows, `build-essential` on Linux)
-
-### Setup & Local Development
-```bash
-# 1. Clone the repository
-git clone https://github.com/jagantripuragiri/J-code.git
-cd J-code
-
-# 2. Install dependencies
-npm install
-
-# 3. Build React UI components
-npm run buildreact
-
-# 4. Start watcher in one terminal
-npm run watch
-
-# 5. Launch development build
-# On macOS / Linux:
-./scripts/code.sh
-
-# On Windows:
-.\scripts\code.bat
-```
-
-### Packaging Production Builds
-
-```bash
-# Build for Apple Silicon Mac (M1/M2/M3/M4)
-node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-darwin-arm64
-
-# Build for Intel Mac
-node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-darwin-x64
-
-# Build for Windows 64-bit (run on Windows host or CI)
-node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-win32-x64
-
-# Build for Linux 64-bit
-node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-linux-x64
-```
-
----
 
 ## 📄 License
 

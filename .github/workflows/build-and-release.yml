@@ -1,0 +1,241 @@
+name: Build and Release J Code's (All Platforms)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create GitHub Release with installers'
+        required: true
+        type: boolean
+        default: true
+      tag_name:
+        description: 'Release Tag (e.g. v1.4.9)'
+        required: false
+        default: 'v1.4.9'
+
+permissions:
+  contents: write
+
+jobs:
+  # ==========================================
+  # 🍏 macOS: Apple Silicon (M1/M2/M3/M4)
+  # ==========================================
+  build-macos-arm64:
+    name: 🍏 macOS (Apple Silicon arm64)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build React Components
+        run: npm run buildreact
+
+      - name: Compile and Package macOS arm64
+        run: node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-darwin-arm64
+
+      - name: Create macOS arm64 ZIP
+        run: |
+          cd ../VSCode-darwin-arm64
+          zip -r -y -X "${{ github.workspace }}/J-Codes-darwin-arm64.zip" "J code's.app"
+
+      - name: Upload macOS arm64 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: J-Codes-darwin-arm64
+          path: J-Codes-darwin-arm64.zip
+
+  # ==========================================
+  # 🍏 macOS: Intel (x64)
+  # ==========================================
+  build-macos-x64:
+    name: 🍏 macOS (Intel x64)
+    runs-on: macos-13
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build React Components
+        run: npm run buildreact
+
+      - name: Compile and Package macOS x64
+        run: node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-darwin-x64
+
+      - name: Create macOS x64 ZIP
+        run: |
+          cd ../VSCode-darwin-x64
+          zip -r -y -X "${{ github.workspace }}/J-Codes-darwin-x64.zip" "J code's.app"
+
+      - name: Upload macOS x64 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: J-Codes-darwin-x64
+          path: J-Codes-darwin-x64.zip
+
+  # ==========================================
+  # 🪟 Windows: 64-bit (Installer .exe + Portable .zip)
+  # ==========================================
+  build-windows:
+    name: 🪟 Windows (x64 Installer & Portable)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build React Components
+        run: npm run buildreact
+
+      - name: Compile and Package Windows App
+        run: node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-win32-x64
+
+      - name: Build InnoSetup Windows Installer (.exe)
+        run: node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-win32-x64-user-setup
+
+      - name: Prepare Windows Installer & ZIP
+        shell: pwsh
+        run: |
+          # Copy and rename User Setup installer
+          $setupExe = Get-ChildItem -Path ".build\win32-x64\user-setup\*.exe" | Select-Object -First 1
+          if ($setupExe) {
+            Copy-Item $setupExe.FullName -Destination "${{ github.workspace }}\J-Codes-UserSetup-x64.exe"
+          }
+          # Compress portable folder
+          Compress-Archive -Path "..\VSCode-win32-x64\*" -DestinationPath "${{ github.workspace }}\J-Codes-win32-x64.zip"
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: J-Codes-Windows-Installer
+          path: J-Codes-UserSetup-x64.exe
+
+      - name: Upload Windows Portable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: J-Codes-win32-x64
+          path: J-Codes-win32-x64.zip
+
+  # ==========================================
+  # 🐧 Linux: 64-bit (.deb Installer & tar.gz)
+  # ==========================================
+  build-linux:
+    name: 🐧 Linux (x64 .deb & tar.gz)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libsecret-1-dev libx11-dev libxkbfile-dev fakeroot rpm
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build React Components
+        run: npm run buildreact
+
+      - name: Compile and Package Linux App
+        run: node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-linux-x64
+
+      - name: Build Linux .deb Package
+        run: node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-linux-x64-build-deb
+
+      - name: Prepare Linux Artifacts
+        run: |
+          # Copy .deb package
+          DEB_FILE=$(find .build/linux/deb -name "*.deb" | head -n 1)
+          if [ -f "$DEB_FILE" ]; then
+            cp "$DEB_FILE" "${{ github.workspace }}/j-codes_amd64.deb"
+          fi
+          # Create tar.gz
+          tar -czf "${{ github.workspace }}/J-Codes-linux-x64.tar.gz" -C ../ VSCode-linux-x64
+
+      - name: Upload Linux .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: J-Codes-linux-deb
+          path: j-codes_amd64.deb
+
+      - name: Upload Linux tar.gz
+        uses: actions/upload-artifact@v4
+        with:
+          name: J-Codes-linux-tar
+          path: J-Codes-linux-x64.tar.gz
+
+  # ==========================================
+  # 🚀 Publish Release to GitHub
+  # ==========================================
+  release:
+    name: 🚀 Publish Official GitHub Release
+    needs: [build-macos-arm64, build-macos-x64, build-windows, build-linux]
+    if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true' || github.event.inputs.create_release == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./dist
+          merge-multiple: true
+
+      - name: Determine Tag Name
+        id: tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "TAG_NAME=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.TAG_NAME }}
+          name: "J Code's ${{ steps.tag.outputs.TAG_NAME }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            ./dist/J-Codes-darwin-arm64.zip
+            ./dist/J-Codes-darwin-x64.zip
+            ./dist/J-Codes-UserSetup-x64.exe
+            ./dist/J-Codes-win32-x64.zip
+            ./dist/j-codes_amd64.deb
+            ./dist/J-Codes-linux-x64.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

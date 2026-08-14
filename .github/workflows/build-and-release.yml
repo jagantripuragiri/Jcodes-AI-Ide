@@ -1,4 +1,4 @@
-name: Build and Release J Code's (Mac & Windows)
+name: Build and Release J Code's (Apple Silicon & Windows)
 
 on:
   push:
@@ -57,44 +57,6 @@ jobs:
         with:
           name: J-Codes-darwin-arm64
           path: J-Codes-darwin-arm64.zip
-
-  # ==========================================
-  # 🍏 macOS: Intel (x64)
-  # ==========================================
-  build-macos-x64:
-    name: 🍏 macOS (Intel x64)
-    runs-on: macos-13
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Install Dependencies
-        run: |
-          export ELECTRON_SKIP_BINARY_DOWNLOAD=1
-          export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-          npm install
-
-      - name: Build React Components
-        run: npm run buildreact
-
-      - name: Compile and Package macOS x64
-        run: node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-darwin-x64
-
-      - name: Create macOS x64 ZIP
-        run: |
-          cd ../VSCode-darwin-x64
-          zip -r -y -X "${{ github.workspace }}/J-Codes-darwin-x64.zip" "J code's.app"
-
-      - name: Upload macOS x64 Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: J-Codes-darwin-x64
-          path: J-Codes-darwin-x64.zip
 
   # ==========================================
   # 🪟 Windows: 64-bit (Installer .exe + Portable .zip)
@@ -158,7 +120,7 @@ jobs:
   # ==========================================
   release:
     name: 🚀 Publish Official GitHub Release
-    needs: [build-macos-arm64, build-macos-x64, build-windows]
+    needs: [build-macos-arm64, build-windows]
     if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true' || github.event.inputs.create_release == true
     runs-on: ubuntu-latest
     steps:
@@ -187,7 +149,6 @@ jobs:
           generate_release_notes: true
           files: |
             ./dist/J-Codes-darwin-arm64.zip
-            ./dist/J-Codes-darwin-x64.zip
             ./dist/J-Codes-UserSetup-x64.exe
             ./dist/J-Codes-win32-x64.zip
         env:

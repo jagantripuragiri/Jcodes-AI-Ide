@@ -1,4 +1,4 @@
-name: Build and Release J Code's (All Platforms)
+name: Build and Release J Code's (Mac & Windows)
 
 on:
   push:
@@ -154,70 +154,11 @@ jobs:
           path: J-Codes-win32-x64.zip
 
   # ==========================================
-  # 🐧 Linux: 64-bit (.deb Installer & tar.gz)
-  # ==========================================
-  build-linux:
-    name: 🐧 Linux (x64 .deb & tar.gz)
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Linux build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libsecret-1-dev libx11-dev libxkbfile-dev fakeroot rpm libkrb5-dev
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Install Dependencies
-        run: |
-          export ELECTRON_SKIP_BINARY_DOWNLOAD=1
-          export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-          npm install
-
-      - name: Build React Components
-        run: npm run buildreact
-
-      - name: Compile and Package Linux App
-        run: node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-linux-x64
-
-      - name: Build Linux .deb Package
-        run: |
-          node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-linux-x64-prepare-deb
-          node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-linux-x64-build-deb
-
-      - name: Prepare Linux Artifacts
-        run: |
-          # Copy .deb package
-          DEB_FILE=$(find .build/linux/deb -name "*.deb" | head -n 1)
-          if [ -f "$DEB_FILE" ]; then
-            cp "$DEB_FILE" "${{ github.workspace }}/j-codes_amd64.deb"
-          fi
-          # Create tar.gz
-          tar -czf "${{ github.workspace }}/J-Codes-linux-x64.tar.gz" -C ../ VSCode-linux-x64
-
-      - name: Upload Linux .deb
-        uses: actions/upload-artifact@v4
-        with:
-          name: J-Codes-linux-deb
-          path: j-codes_amd64.deb
-
-      - name: Upload Linux tar.gz
-        uses: actions/upload-artifact@v4
-        with:
-          name: J-Codes-linux-tar
-          path: J-Codes-linux-x64.tar.gz
-
-  # ==========================================
   # 🚀 Publish Release to GitHub
   # ==========================================
   release:
     name: 🚀 Publish Official GitHub Release
-    needs: [build-macos-arm64, build-macos-x64, build-windows, build-linux]
+    needs: [build-macos-arm64, build-macos-x64, build-windows]
     if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true' || github.event.inputs.create_release == true
     runs-on: ubuntu-latest
     steps:
@@ -249,7 +190,5 @@ jobs:
             ./dist/J-Codes-darwin-x64.zip
             ./dist/J-Codes-UserSetup-x64.exe
             ./dist/J-Codes-win32-x64.zip
-            ./dist/j-codes_amd64.deb
-            ./dist/J-Codes-linux-x64.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -285,7 +285,7 @@ const prepareOpenAIOrAnthropicMessages = ({
 	// A COMPLETE HACK: last message is system message for context purposes
 
 	const sysMsgParts: string[] = []
-	if (aiInstructions) sysMsgParts.push(`GUIDELINES (from the user's .voidrules file):\n${aiInstructions}`)
+	if (aiInstructions) sysMsgParts.push(`GUIDELINES (from the user's .jcodesrules file):\n${aiInstructions}`)
 	if (systemMessage) sysMsgParts.push(systemMessage)
 	const combinedSystemMessage = sysMsgParts.join('\n\n')
 
@@ -601,32 +601,32 @@ class ConvertToLLMMessageService extends Disposable implements IConvertToLLMMess
 		super()
 	}
 
-	// Read .voidrules files from workspace folders
-	private _getVoidRulesFileContents(): string {
+	// Read .jcodesrules files from workspace folders
+	private _getJcodesRulesFileContents(): string {
 		try {
 			const workspaceFolders = this.workspaceContextService.getWorkspace().folders;
-			let voidRules = '';
+			let jcodesRules = '';
 			for (const folder of workspaceFolders) {
-				const uri = URI.joinPath(folder.uri, '.voidrules')
+				const uri = URI.joinPath(folder.uri, '.jcodesrules')
 				const { model } = this.voidModelService.getModel(uri)
 				if (!model) continue
-				voidRules += model.getValue(EndOfLinePreference.LF) + '\n\n';
+				jcodesRules += model.getValue(EndOfLinePreference.LF) + '\n\n';
 			}
-			return voidRules.trim();
+			return jcodesRules.trim();
 		}
 		catch (e) {
 			return ''
 		}
 	}
 
-	// Get combined AI instructions from settings and .voidrules files
+	// Get combined AI instructions from settings and .jcodesrules files
 	private _getCombinedAIInstructions(): string {
 		const globalAIInstructions = this.voidSettingsService.state.globalSettings.aiInstructions;
-		const voidRulesFileContent = this._getVoidRulesFileContents();
+		const jcodesRulesFileContent = this._getJcodesRulesFileContents();
 
 		const ans: string[] = []
 		if (globalAIInstructions) ans.push(globalAIInstructions)
-		if (voidRulesFileContent) ans.push(voidRulesFileContent)
+		if (jcodesRulesFileContent) ans.push(jcodesRulesFileContent)
 		return ans.join('\n\n')
 	}
 

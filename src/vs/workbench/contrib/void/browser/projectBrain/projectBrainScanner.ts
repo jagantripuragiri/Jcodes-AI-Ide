@@ -92,7 +92,7 @@ export const toRelPath = (rootURI: URI, resource: URI): string | null => {
 const TEST_RE = /(^|\/)(__tests__|tests?)\/|\.(test|spec)\.[jt]sx?$|_test\.py$|test_.*\.py$/i
 const DOC_RE = /\.(md|mdx)$/i
 const DOC_NAME_RE = /^(readme|changelog|license|contributing|code_of_conduct)(\.|$)/i
-const CONFIG_NAME_RE = /^(package(-lock)?\.json|pnpm-lock\.yaml|yarn\.lock|tsconfig.*\.json|\.eslintrc.*|\.env.*|webpack\.config\..*|vite\.config\..*|next\.config\..*|tailwind\.config\..*|dockerfile|docker-compose.*\.ya?ml|requirements\.txt|pyproject\.toml|cargo\.toml|go\.mod|pom\.xml|build\.gradle.*|\.gitignore|\.jcodesrules|\.voidrules)$/i
+const CONFIG_NAME_RE = /^(package(-lock)?\.json|pnpm-lock\.yaml|yarn\.lock|tsconfig.*\.json|\.eslintrc.*|\.env.*|webpack\.config\..*|vite\.config\..*|next\.config\..*|tailwind\.config\..*|dockerfile|docker-compose.*\.ya?ml|requirements\.txt|pyproject\.toml|cargo\.toml|go\.mod|pom\.xml|build\.gradle.*|\.gitignore|\.jcodesrules)$/i
 const CONFIG_EXT_RE = /\.(config)\.(js|ts|cjs|mjs)$/i
 const ENTRY_NAME_RE = /^(index|main|app|server)\.(ts|tsx|js|jsx|mjs|py|go|rs)$/i
 const AUTH_RE = /(^|[/_.-])auth(?!or)(entication|orization)?([/_.-]|$)|(^|[/_.-])(jwt|login|logout|session)([/_.-]|$)/i

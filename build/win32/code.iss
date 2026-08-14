@@ -1336,7 +1336,7 @@ begin
       RegKey := 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\' + copy('{#IncompatibleTargetAppId}', 2, 38) + '_is1';
 
       if RegKeyExists({#IncompatibleArchRootKey}, RegKey) then begin
-        if MsgBox('{#NameShort} is already installed on this system for all users. We recommend first uninstalling that version before installing this one. Are you sure you want to continue the installation?', mbConfirmation, MB_YESNO) = IDNO then begin
+        if MsgBox('{#StringChange(NameShort, "'", "''")} is already installed on this system for all users. We recommend first uninstalling that version before installing this one. Are you sure you want to continue the installation?', mbConfirmation, MB_YESNO) = IDNO then begin
           Result := False;
         end;
       end;
@@ -1361,14 +1361,14 @@ var
 	TaskKilled: Integer;
 begin
 	Log('Stopping all tunnel services (at ' + ExpandConstant('"{app}\bin\{#TunnelApplicationName}.exe"') + ')');
-	ShellExec('', 'powershell.exe', '-Command "Get-WmiObject Win32_Process | Where-Object { $_.ExecutablePath -eq ' + ExpandConstant('''{app}\bin\{#TunnelApplicationName}.exe''') + ' } | Select @{Name=''Id''; Expression={$_.ProcessId}} | Stop-Process -Force"', '', SW_HIDE, ewWaitUntilTerminated, TaskKilled)
+	ShellExec('', 'powershell.exe', '-Command "Get-WmiObject Win32_Process | Where-Object { $_.ExecutablePath -eq ' + ExpandConstant('''{app}\bin\{#TunnelApplicationName}.exe''') + ' } | Select @{Name=''Id''; Expression={$_.ProcessId}} | Stop-Process -Force"', '', SW_HIDE, ewWaitUntilTerminated, TaskKilled);
 
 	WaitCounter := 10;
 	while (WaitCounter > 0) and CheckForMutexes('{#TunnelMutex}') do
 	begin
 		Log('Tunnel process is is still running, waiting');
 		Sleep(500);
-		WaitCounter := WaitCounter - 1
+		WaitCounter := WaitCounter - 1;
 	end;
 
 	if CheckForMutexes('{#TunnelMutex}') then
@@ -1385,28 +1385,26 @@ var
 	StopServiceResultCode: Integer;
 	WaitCounter: Integer;
 begin
-  ShouldRestartTunnelService := False;
+	ShouldRestartTunnelService := False;
  	if CheckForMutexes('{#TunnelServiceMutex}') then begin
 		// stop the tunnel service
 		Log('Stopping the tunnel service using ' + ExpandConstant('"{app}\bin\{#ApplicationName}.cmd"'));
 		ShellExec('', ExpandConstant('"{app}\bin\{#ApplicationName}.cmd"'), 'tunnel service uninstall', '', SW_HIDE, ewWaitUntilTerminated, StopServiceResultCode);
-
-		Log('Stopping the tunnel service completed with result code ' + IntToStr(StopServiceResultCode));
 
 		WaitCounter := 10;
 		while (WaitCounter > 0) and CheckForMutexes('{#TunnelServiceMutex}') do
 		begin
 			Log('Tunnel service is still running, waiting');
 			Sleep(500);
-			WaitCounter := WaitCounter - 1
+			WaitCounter := WaitCounter - 1;
 		end;
+
 		if CheckForMutexes('{#TunnelServiceMutex}') then
 			Log('Unable to stop tunnel service')
 		else
 			ShouldRestartTunnelService := True;
-	end
+	end;
 end;
-
 
 // called before the wizard checks for running application
 function PrepareToInstall(var NeedsRestart: Boolean): String;
@@ -1415,7 +1413,7 @@ begin
     StopTunnelServiceIfNeeded();
 
   if IsNotBackgroundUpdate() and not StopTunnelOtherProcesses() then
-     Result := '{#NameShort} is still running a tunnel process. Please stop the tunnel before installing.'
+     Result := '{#StringChange(NameShort, "'", "''")} is still running a tunnel process. Please stop the tunnel before installing.'
   else
   	Result := '';
 end;

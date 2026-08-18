@@ -144,7 +144,11 @@ class GenerateCommitMessageService extends Disposable implements IGenerateCommit
 				onText: () => { },
 				onFinalMessage: (params: { fullText: string }) => {
 					const match = params.fullText.match(/<output>([\s\S]*?)<\/output>/i)
-					const commitMessage = match ? match[1].trim() : ''
+					const commitMessage = (match ? match[1] : params.fullText).trim()
+					if (!commitMessage) {
+						reject(new Error('Model returned an empty commit message.'))
+						return
+					}
 					resolve(commitMessage)
 				},
 				onError: (error) => {
@@ -181,9 +185,9 @@ class GenerateCommitMessageAction extends Action2 {
 	constructor() {
 		super({
 			id: 'void.generateCommitMessageAction',
-			title: localize2('voidCommitMessagePrompt', 'Void: Generate Commit Message'),
+			title: localize2('voidCommitMessagePrompt', 'Jcode: Generate Commit Message'),
 			icon: ThemeIcon.fromId('sparkle'),
-			tooltip: localize2('voidCommitMessagePromptTooltip', 'Void: Generate Commit Message'),
+			tooltip: localize2('voidCommitMessagePromptTooltip', 'Jcode: Generate Commit Message'),
 			f1: true,
 			menu: [{
 				id: MenuId.SCMInputBox,
@@ -203,9 +207,9 @@ class LoadingGenerateCommitMessageAction extends Action2 {
 	constructor() {
 		super({
 			id: 'void.loadingGenerateCommitMessageAction',
-			title: localize2('voidCommitMessagePromptCancel', 'Void: Cancel Commit Message Generation'),
+			title: localize2('voidCommitMessagePromptCancel', 'Jcode: Cancel Commit Message Generation'),
 			icon: ThemeIcon.fromId('stop-circle'),
-			tooltip: localize2('voidCommitMessagePromptCancelTooltip', 'Void: Cancel Commit Message Generation'),
+			tooltip: localize2('voidCommitMessagePromptCancelTooltip', 'Jcode: Cancel Commit Message Generation'),
 			f1: false, //Having a cancel command in the command palette is more confusing than useful.
 			menu: [{
 				id: MenuId.SCMInputBox,

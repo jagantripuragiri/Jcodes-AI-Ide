@@ -144,7 +144,11 @@ class GenerateCommitMessageService extends Disposable implements IGenerateCommit
 				onText: () => { },
 				onFinalMessage: (params: { fullText: string }) => {
 					const match = params.fullText.match(/<output>([\s\S]*?)<\/output>/i)
-					const commitMessage = match ? match[1].trim() : ''
+					const commitMessage = (match ? match[1] : params.fullText).trim()
+					if (!commitMessage) {
+						reject(new Error('Model returned an empty commit message.'))
+						return
+					}
 					resolve(commitMessage)
 				},
 				onError: (error) => {

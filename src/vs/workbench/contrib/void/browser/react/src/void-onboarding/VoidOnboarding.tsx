@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAccessor, useIsDark, useSettingsState } from '../util/services.js';
-import { Brain, Check, ChevronRight, DollarSign, ExternalLink, Lock, X } from 'lucide-react';
-import { displayInfoOfProviderName, ProviderName, providerNames, localProviderNames, featureNames, FeatureName, isFeatureNameDisabled } from '../../../../common/voidSettingsTypes.js';
+import { Brain, ChevronRight, Cloud, DollarSign, ExternalLink, Gift, Lock, Monitor, Plus, X } from 'lucide-react';
+import { displayInfoOfProviderName, ProviderName, providerNames, localProviderNames, featureNames, isFeatureNameDisabled } from '../../../../common/voidSettingsTypes.js';
 import { ChatMarkdownRender } from '../markdown/ChatMarkdownRender.js';
 import { OllamaSetupInstructions, SettingsForProvider, ModelDump } from '../void-settings-tsx/Settings.js';
 import { VoidCustomDropdownBox } from '../util/inputs.js';
@@ -140,28 +140,23 @@ const descriptionOfTab: Record<TabName, string> = {
 };
 
 
-const featureNameMap: { display: string, featureName: FeatureName }[] = [
-	{ display: 'Chat', featureName: 'Chat' },
-	{ display: 'Quick Edit', featureName: 'Ctrl+K' },
-	{ display: 'Autocomplete', featureName: 'Autocomplete' },
-	{ display: 'Fast Apply', featureName: 'Apply' },
-	{ display: 'Source Control', featureName: 'SCM' },
-];
+const tabIconOfTab: Record<TabName, React.FC<any>> = {
+	Free: Gift,
+	Paid: Plus,
+	Local: Monitor,
+	'Cloud/Other': Cloud,
+};
 
 const AddProvidersPage = ({ pageIndex, setPageIndex }: { pageIndex: number, setPageIndex: (index: number) => void }) => {
 	const [currentTab, setCurrentTab] = useState<TabName>('Free');
 	const settingsState = useSettingsState();
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-	// 'simplified' shows one provider (from a dropdown) at a time per tier; 'all' shows every provider in the tier at once (previous behavior)
-	const [viewMode, setViewMode] = useState<'simplified' | 'all'>('simplified');
-	const [selectedProviderOfTab, setSelectedProviderOfTab] = useState<Record<TabName, ProviderName>>({
-		Free: providerNamesOfTab.Free[0],
-		Paid: providerNamesOfTab.Paid[0],
-		Local: providerNamesOfTab.Local[0],
-		'Cloud/Other': providerNamesOfTab['Cloud/Other'][0],
-	});
-	const providerNamesToShow = viewMode === 'simplified' ? [selectedProviderOfTab[currentTab]] : providerNamesOfTab[currentTab];
+	const [addProviderName, setAddProviderName] = useState<ProviderName>(providerNamesOfTab['Free'][0]);
+
+	const configuredProvidersOfTab = providerNamesOfTab[currentTab].filter(
+		(providerName) => settingsState.settingsOfProvider[providerName]._didFillInProviderSettings
+	);
 
 	// Clear error message after 5 seconds
 	useEffect(() => {
@@ -181,163 +176,121 @@ const AddProvidersPage = ({ pageIndex, setPageIndex }: { pageIndex: number, setP
 		};
 	}, [errorMessage]);
 
-	return (<div className="flex flex-col md:flex-row w-full h-[80vh] gap-6 max-w-[900px] mx-auto relative">
-		{/* Left Column */}
-		<div className="md:w-1/4 w-full flex flex-col gap-6 p-6 border-none border-void-border-2 h-full overflow-y-auto">
-			{/* Tab Selector */}
-			<div className="flex md:flex-col gap-2">
-				{[...tabNames, 'Cloud/Other'].map(tab => (
+	useEffect(() => {
+		setAddProviderName(providerNamesOfTab[currentTab][0]);
+	}, [currentTab]);
+
+	const providerNamesToShow = [...new Set([...configuredProvidersOfTab, addProviderName])];
+
+	return (<div className="flex flex-col w-full h-[80vh] gap-4 max-w-[900px] mx-auto relative overflow-y-auto">
+		{/* Header */}
+		<div className="w-full">
+			<div className="text-3xl font-semibold">Providers</div>
+			<div className="text-sm opacity-70 text-void-fg-3">Manage all your AI providers, API keys, and models in one place.</div>
+		</div>
+
+		{/* Tab Selector */}
+		<div className="flex flex-wrap gap-2">
+			{[...tabNames, 'Cloud/Other'].map(tab => {
+				const Icon = tabIconOfTab[tab as TabName];
+				return (
 					<button
 						key={tab}
-						className={`py-2 px-4 rounded-md text-left ${currentTab === tab
-							? 'bg-black text-white dark:bg-white dark:text-black font-medium shadow-sm'
-							: 'bg-void-bg-2 hover:bg-void-bg-2/80 text-void-fg-1'
-							} transition-all duration-200`}
+						className={`flex items-center gap-1.5 py-1.5 px-3 rounded-full border text-sm transition-all duration-200 ${currentTab === tab
+							? 'border-void-fg-1 text-void-fg-1'
+							: 'border-void-border-2 text-void-fg-3 hover:border-void-fg-3'
+							}`}
 						onClick={() => {
 							setCurrentTab(tab as TabName);
 							setErrorMessage(null); // Reset error message when changing tabs
 						}}
 					>
+						<Icon className="w-3.5 h-3.5" />
 						{tab}
 					</button>
-				))}
-			</div>
+				);
+			})}
+		</div>
 
-			{/* Feature Checklist */}
-			<div className="flex flex-col gap-1 mt-4 text-sm opacity-80">
-				{featureNameMap.map(({ display, featureName }) => {
-					const hasModel = settingsState.modelSelectionOfFeature[featureName] !== null;
-					return (
-						<div key={featureName} className="flex items-center gap-2">
-							{hasModel ? (
-								<Check className="w-4 h-4 text-emerald-500" />
-							) : (
-								<div className="w-3 h-3 rounded-full flex items-center justify-center">
-									<div className="w-1 h-1 rounded-full bg-white/70"></div>
-								</div>
-							)}
-							<span>{display}</span>
-						</div>
-					);
-				})}
+		{/* Description + Add Provider */}
+		<div className="flex items-center justify-between w-full">
+			<div className="text-sm opacity-80 text-void-fg-3">{descriptionOfTab[currentTab]}</div>
+			<div className="flex items-center gap-2">
+				<VoidCustomDropdownBox
+					options={providerNamesOfTab[currentTab]}
+					selectedOption={addProviderName}
+					onChangeOption={(providerName) => setAddProviderName(providerName)}
+					getOptionDisplayName={(providerName) => displayInfoOfProviderName(providerName).title}
+					getOptionDropdownName={(providerName) => displayInfoOfProviderName(providerName).title}
+					getOptionsEqual={(a, b) => a === b}
+					className="min-w-[160px] bg-void-bg-1 text-void-fg-1 border border-void-border-2 py-1 px-2 rounded text-sm"
+					arrowTouchesText={false}
+				/>
 			</div>
 		</div>
 
-		{/* Right Column */}
-		<div className="flex-1 flex flex-col items-center justify-start p-6 h-full overflow-y-auto">
-			<div className="text-5xl mb-2 text-center w-full">Add a Provider</div>
-
-			{/* Simplified / Show All toggle */}
-			<div className="flex justify-center mt-4">
-				<div className="flex gap-1 bg-void-bg-2 rounded-md p-1 text-sm">
-					<button
-						className={`px-3 py-1 rounded transition-all duration-200 ${viewMode === 'simplified'
-							? 'bg-black text-white dark:bg-white dark:text-black font-medium shadow-sm'
-							: 'text-void-fg-1 hover:bg-void-bg-2/80'
-							}`}
-						onClick={() => setViewMode('simplified')}
-					>
-						Simplified
-					</button>
-					<button
-						className={`px-3 py-1 rounded transition-all duration-200 ${viewMode === 'all'
-							? 'bg-black text-white dark:bg-white dark:text-black font-medium shadow-sm'
-							: 'text-void-fg-1 hover:bg-void-bg-2/80'
-							}`}
-						onClick={() => setViewMode('all')}
-					>
-						Show All
-					</button>
-				</div>
-			</div>
-
-			<div className="w-full max-w-xl mt-4 mb-10">
-				<div className="text-4xl font-light my-4 w-full">{currentTab}</div>
-				<div className="text-sm opacity-80 text-void-fg-3 my-4 w-full">{descriptionOfTab[currentTab]}</div>
-			</div>
-
-			{viewMode === 'simplified' && (
-				<div className="w-full max-w-xl mb-6">
-					<div className="text-sm text-void-fg-3 mb-2">Provider</div>
-					<VoidCustomDropdownBox
-						options={providerNamesOfTab[currentTab]}
-						selectedOption={selectedProviderOfTab[currentTab]}
-						onChangeOption={(providerName) => setSelectedProviderOfTab(prev => ({ ...prev, [currentTab]: providerName }))}
-						getOptionDisplayName={(providerName) => displayInfoOfProviderName(providerName).title}
-						getOptionDropdownName={(providerName) => displayInfoOfProviderName(providerName).title}
-						getOptionsEqual={(a, b) => a === b}
-						className="w-full max-w-xs resize-none bg-void-bg-1 text-void-fg-1 placeholder:text-void-fg-3 border border-void-border-2 focus:border-void-border-1 py-2 px-3 rounded"
-						arrowTouchesText={false}
-					/>
-				</div>
-			)}
-
+		{/* Provider cards */}
+		<div className="flex flex-col gap-4 w-full">
 			{providerNamesToShow.map((providerName) => (
-				<div key={providerName} className="w-full max-w-xl mb-10">
-					<div className="text-xl mb-2">
-						Add {displayInfoOfProviderName(providerName).title}
-						{providerName === 'gemini' && (
-							<span
-								data-tooltip-id="void-tooltip-provider-info"
-								data-tooltip-content="Gemini 2.5 Pro offers 25 free messages a day, and Gemini 2.5 Flash offers 500. We recommend using models down the line as you run out of free credits."
-								data-tooltip-place="right"
-								className="ml-1 text-xs align-top text-blue-400"
-							>*</span>
-						)}
-						{providerName === 'openRouter' && (
-							<span
-								data-tooltip-id="void-tooltip-provider-info"
-								data-tooltip-content="OpenRouter offers 50 free messages a day, and 1000 if you deposit $10. Only applies to models labeled ':free'."
-								data-tooltip-place="right"
-								className="ml-1 text-xs align-top text-blue-400"
-							>*</span>
-						)}
-					</div>
+				<div key={providerName} className="w-full border border-void-border-2 rounded-lg p-5 flex flex-col gap-4">
 					<div>
+						<div className="flex items-center gap-2 mb-3">
+							<div className="text-lg font-medium">{displayInfoOfProviderName(providerName).title}</div>
+							{settingsState.settingsOfProvider[providerName]._didFillInProviderSettings && (
+								<span className="text-xs px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-500">Active</span>
+							)}
+							{providerName === 'gemini' && (
+								<span
+									data-tooltip-id="void-tooltip-provider-info"
+									data-tooltip-content="Gemini 2.5 Pro offers 25 free messages a day, and Gemini 2.5 Flash offers 500. We recommend using models down the line as you run out of free credits."
+									data-tooltip-place="right"
+									className="text-xs align-top text-blue-400"
+								>*</span>
+							)}
+							{providerName === 'openRouter' && (
+								<span
+									data-tooltip-id="void-tooltip-provider-info"
+									data-tooltip-content="OpenRouter offers 50 free messages a day, and 1000 if you deposit $10. Only applies to models labeled ':free'."
+									data-tooltip-place="right"
+									className="text-xs align-top text-blue-400"
+								>*</span>
+							)}
+						</div>
 						<SettingsForProvider providerName={providerName} showProviderTitle={false} showProviderSuggestions={true} />
-
+						{providerName === 'ollama' && <OllamaSetupInstructions />}
 					</div>
-					{providerName === 'ollama' && <OllamaSetupInstructions />}
+					{settingsState.settingsOfProvider[providerName]._didFillInProviderSettings && (
+						<div className="w-full bg-void-bg-2/50 rounded-lg p-4 border border-void-border-4">
+							<div className="text-xs tracking-wide uppercase opacity-60 mb-2">Models</div>
+							<ModelDump filteredProviders={[providerName]} />
+						</div>
+					)}
 				</div>
 			))}
+		</div>
 
-			{(viewMode === 'simplified' || currentTab === 'Local' || currentTab === 'Cloud/Other') && (
-				<div className="w-full max-w-xl mt-8 bg-void-bg-2/50 rounded-lg p-6 border border-void-border-4">
-					<div className="flex items-center gap-2 mb-4">
-						<div className="text-xl font-medium">Models</div>
-					</div>
+		{/* Navigation buttons */}
+		<div className="flex items-center justify-between w-full mt-auto pt-4 border-t border-void-border-2">
+			<div className="text-xs opacity-60 text-void-fg-3">
+				{errorMessage ? (
+					<span className="text-amber-400">{errorMessage}</span>
+				) : "Tip: changes are saved automatically."}
+			</div>
+			<div className="flex items-center gap-2">
+				<PreviousButton onClick={() => setPageIndex(pageIndex - 1)} />
+				<NextButton
+					onClick={() => {
+						const isDisabled = isFeatureNameDisabled('Chat', settingsState)
 
-					{currentTab === 'Local' && (
-						<div className="text-sm opacity-80 text-void-fg-3 my-4 w-full">Local models should be detected automatically. You can add custom models below.</div>
-					)}
-
-					<ModelDump filteredProviders={providerNamesToShow} />
-				</div>
-			)}
-
-
-
-			{/* Navigation buttons in right column */}
-			<div className="flex flex-col items-end w-full mt-auto pt-8">
-				{errorMessage && (
-					<div className="text-amber-400 mb-2 text-sm opacity-80 transition-opacity duration-300">{errorMessage}</div>
-				)}
-				<div className="flex items-center gap-2">
-					<PreviousButton onClick={() => setPageIndex(pageIndex - 1)} />
-					<NextButton
-						onClick={() => {
-							const isDisabled = isFeatureNameDisabled('Chat', settingsState)
-
-							if (!isDisabled) {
-								setPageIndex(pageIndex + 1);
-								setErrorMessage(null);
-							} else {
-								// Show error message
-								setErrorMessage("Please set up at least one Chat model before moving on.");
-							}
-						}}
-					/>
-				</div>
+						if (!isDisabled) {
+							setPageIndex(pageIndex + 1);
+							setErrorMessage(null);
+						} else {
+							// Show error message
+							setErrorMessage("Please set up at least one Chat model before moving on.");
+						}
+					}}
+				/>
 			</div>
 		</div>
 	</div>);
@@ -683,12 +636,19 @@ const VoidOnboardingContent = () => {
 
 					<FadeIn
 						delayMs={1000}
+						className="flex items-center gap-4"
 					>
 						<PrimaryActionButton
 							onClick={() => { setPageIndex(1) }}
 						>
 							Get Started
 						</PrimaryActionButton>
+						<button
+							className="text-sm text-void-fg-3 opacity-80 hover:opacity-100 transition-all"
+							onClick={() => { setPageIndex(2) }}
+						>
+							Skip to Summary
+						</button>
 					</FadeIn>
 
 				</div>
@@ -703,8 +663,9 @@ const VoidOnboardingContent = () => {
 		2: <OnboardingPageShell
 
 			content={
-				<div className='flex flex-col items-center gap-8'>
-					<AnimatedBuildTitle text="You're all set" className="text-5xl font-light text-center" />
+				<div className='flex flex-col items-center gap-4'>
+					<AnimatedBuildTitle text="Your workspace is ready to go." className="text-3xl font-semibold text-center" />
+					<div className="text-sm text-void-fg-3 text-center max-w-md">You can continue with the current setup now and fine-tune providers, models, and AI behavior later from settings.</div>
 
 					{/* Slice of Void image */}
 					<div

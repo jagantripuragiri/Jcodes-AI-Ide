@@ -1098,11 +1098,19 @@ export class ChatService extends Disposable implements IChatService {
 				if (model.getRequests().length === 0) {
 					delete this._persistedSessions[sessionId];
 				} else {
-					// Turn all the real objects into actual JSON, otherwise, calling 'revive' may fail when it tries to
-					// assign values to properties that are getters- microsoft/vscode-copilot-release#1233
-					const sessionData: ISerializableChatData = JSON.parse(JSON.stringify(model));
-					sessionData.isNew = true;
-					this._persistedSessions[sessionId] = sessionData;
+					try {
+						// Turn all the real objects into actual JSON, otherwise, calling 'revive' may fail when it tries to
+						// assign values to properties that are getters- microsoft/vscode-copilot-release#1233
+						const sessionData: ISerializableChatData = JSON.parse(JSON.stringify(model));
+						sessionData.isNew = true;
+						this._persistedSessions[sessionId] = sessionData;
+					} catch (e) {
+						// Serializing a very large session (e.g. a long-running chat) can throw
+						// (RangeError: Invalid string length, circular structure, etc). Don't let
+						// that block clearing the session / starting a new chat.
+						this.trace('clearSession', `Failed to persist session ${sessionId}: ${e}`);
+						delete this._persistedSessions[sessionId];
+					}
 				}
 			}
 		}

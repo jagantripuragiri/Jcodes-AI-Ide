@@ -253,7 +253,13 @@ export class ChatViewPane extends ViewPane implements IViewWelcomeDelegate {
 
 	private async clear(): Promise<void> {
 		if (this.widget.viewModel) {
-			await this.chatService.clearSession(this.widget.viewModel.sessionId);
+			try {
+				await this.chatService.clearSession(this.widget.viewModel.sessionId);
+			} catch (e) {
+				// Don't let a failure to persist/clear the old (e.g. very large) session
+				// block starting a new chat.
+				this.logService.error(e);
+			}
 		}
 
 		// Grab the widget's latest view state because it will be loaded back into the widget

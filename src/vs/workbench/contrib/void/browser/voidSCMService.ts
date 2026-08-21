@@ -19,6 +19,7 @@ import { registerSingleton, InstantiationType } from '../../../../platform/insta
 import { createDecorator, ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js'
 import { Disposable } from '../../../../base/common/lifecycle.js'
 import { INotificationService } from '../../../../platform/notification/common/notification.js'
+import { URI } from '../../../../base/common/uri.js'
 
 interface ModelOptions {
 	modelSelection: ModelSelection | null
@@ -28,7 +29,7 @@ interface ModelOptions {
 
 export interface IGenerateCommitMessageService {
 	readonly _serviceBrand: undefined
-	generateCommitMessage(): Promise<void>
+	generateCommitMessage(repoRootUri?: URI): Promise<void>
 	abort(): void
 }
 
@@ -63,7 +64,7 @@ class GenerateCommitMessageService extends Disposable implements IGenerateCommit
 		super.dispose()
 	}
 
-	async generateCommitMessage() {
+	async generateCommitMessage(repoRootUri?: URI) {
 		this.loadingContextKey.set(true)
 		this.execute.trigger(async () => {
 			const requestId = generateUuid()
@@ -71,7 +72,7 @@ class GenerateCommitMessageService extends Disposable implements IGenerateCommit
 
 
 			try {
-				const { path, repo } = this.gitRepoInfo()
+				const { path, repo } = this.gitRepoInfo(repoRootUri)
 				const [stat, sampledDiffs, branch, log] = await Promise.all([
 					this.voidSCM.gitStat(path),
 					this.voidSCM.gitSampledDiffs(path),
@@ -121,8 +122,11 @@ class GenerateCommitMessageService extends Disposable implements IGenerateCommit
 		this.currentRequestId = null
 	}
 
-	private gitRepoInfo() {
-		const repo = Array.from(this.scmService.repositories || []).find((r: any) => r.provider.contextValue === 'git')
+	private gitRepoInfo(repoRootUri?: URI) {
+		const gitRepos = Array.from(this.scmService.repositories || []).filter((r: any) => r.provider.contextValue === 'git')
+		const repo = repoRootUri
+			? gitRepos.find((r: any) => r.provider.rootUri && r.provider.rootUri.toString() === repoRootUri.toString())
+			: gitRepos[0]
 		if (!repo) { throw new Error('No git repository found') }
 		if (!repo.provider.rootUri?.fsPath) { throw new Error('No git repository root path found') }
 		return { path: repo.provider.rootUri.fsPath, repo }
@@ -197,9 +201,9 @@ class GenerateCommitMessageAction extends Action2 {
 		})
 	}
 
-	async run(accessor: ServicesAccessor): Promise<void> {
+	async run(accessor: ServicesAccessor, repoRootUri?: URI): Promise<void> {
 		const generateCommitMessageService = accessor.get(IGenerateCommitMessageService)
-		generateCommitMessageService.generateCommitMessage()
+		generateCommitMessageService.generateCommitMessage(repoRootUri)
 	}
 }
 

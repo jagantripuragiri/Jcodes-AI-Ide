@@ -380,12 +380,25 @@ export const displayInfoOfFeatureName = (featureName: FeatureName) => {
 }
 
 
+// cloud providers that use an OpenAI-compatible SDK, so listing their models also verifies the API key
+export const keyVerifiableProviderNames = ['openAI', 'deepseek', 'groq', 'xAI', 'mistral', 'openRouter'] satisfies ProviderName[]
+
 // the models of these can be refreshed (in theory all can, but not all should)
-export const refreshableProviderNames = localProviderNames
+export const refreshableProviderNames = [...localProviderNames, ...keyVerifiableProviderNames] satisfies ProviderName[]
 export type RefreshableProviderName = typeof refreshableProviderNames[number]
 
 // models that come with download buttons
 export const hasDownloadButtonsOnModelsProviderNames = ['ollama'] as const satisfies ProviderName[]
+
+// known API key prefixes, for catching obviously-wrong keys (e.g. "123", "xyz") before even trying to verify them - providers without a known fixed prefix are omitted, not every provider's key format is public/stable
+export const apiKeyFormatOfProvider: Partial<Record<ProviderName, RegExp>> = {
+	anthropic: /^sk-ant-/,
+	openAI: /^sk-/,
+	deepseek: /^sk-/,
+	groq: /^gsk_/,
+	xAI: /^xai-/,
+	openRouter: /^sk-or-/,
+}
 
 
 

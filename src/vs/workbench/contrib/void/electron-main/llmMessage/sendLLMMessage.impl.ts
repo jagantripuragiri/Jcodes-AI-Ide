@@ -874,12 +874,12 @@ export const sendLLMMessageToProviderImplementation = {
 	openAI: {
 		sendChat: (params) => _sendOpenAICompatibleChat(params),
 		sendFIM: null,
-		list: null,
+		list: (params) => _openaiCompatibleList(params),
 	},
 	xAI: {
 		sendChat: (params) => _sendOpenAICompatibleChat(params),
 		sendFIM: null,
-		list: null,
+		list: (params) => _openaiCompatibleList(params),
 	},
 	gemini: {
 		sendChat: (params) => sendGeminiChat(params),
@@ -889,7 +889,7 @@ export const sendLLMMessageToProviderImplementation = {
 	mistral: {
 		sendChat: (params) => _sendOpenAICompatibleChat(params),
 		sendFIM: (params) => sendMistralFIM(params),
-		list: null,
+		list: (params) => _openaiCompatibleList(params),
 	},
 	ollama: {
 		sendChat: (params) => _sendOpenAICompatibleChat(params),
@@ -904,7 +904,7 @@ export const sendLLMMessageToProviderImplementation = {
 	openRouter: {
 		sendChat: (params) => _sendOpenAICompatibleChat(params),
 		sendFIM: (params) => _sendOpenAICompatibleFIM(params),
-		list: null,
+		list: (params) => _openaiCompatibleList(params),
 	},
 	vLLM: {
 		sendChat: (params) => _sendOpenAICompatibleChat(params),
@@ -914,12 +914,12 @@ export const sendLLMMessageToProviderImplementation = {
 	deepseek: {
 		sendChat: (params) => _sendOpenAICompatibleChat(params),
 		sendFIM: null,
-		list: null,
+		list: (params) => _openaiCompatibleList(params),
 	},
 	groq: {
 		sendChat: (params) => _sendOpenAICompatibleChat(params),
 		sendFIM: null,
-		list: null,
+		list: (params) => _openaiCompatibleList(params),
 	},
 
 	lmStudio: {

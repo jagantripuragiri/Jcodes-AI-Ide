@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'; // Added useRef import just in case it was missed, though likely already present
-import { ProviderName, SettingName, displayInfoOfSettingName, providerNames, VoidStatefulModelInfo, customSettingNamesOfProvider, RefreshableProviderName, refreshableProviderNames, displayInfoOfProviderName, nonlocalProviderNames, localProviderNames, GlobalSettingName, featureNames, displayInfoOfFeatureName, isProviderNameDisabled, FeatureName, hasDownloadButtonsOnModelsProviderNames, subTextMdOfProviderName } from '../../../../common/voidSettingsTypes.js'
+import { ProviderName, SettingName, displayInfoOfSettingName, providerNames, VoidStatefulModelInfo, customSettingNamesOfProvider, RefreshableProviderName, refreshableProviderNames, displayInfoOfProviderName, nonlocalProviderNames, localProviderNames, GlobalSettingName, featureNames, displayInfoOfFeatureName, isProviderNameDisabled, FeatureName, hasDownloadButtonsOnModelsProviderNames, subTextMdOfProviderName, apiKeyFormatOfProvider } from '../../../../common/voidSettingsTypes.js'
 import ErrorBoundary from '../sidebar-tsx/ErrorBoundary.js'
 import { VoidButtonBgDarken, VoidCustomDropdownBox, VoidInputBox2, VoidSimpleInputBox, VoidSwitch } from '../util/inputs.js'
 import { useAccessor, useIsDark, useIsOptedOut, useRefreshModelListener, useRefreshModelState, useSettingsState } from '../util/services.js'
@@ -626,6 +626,10 @@ const ProviderSetting = ({ providerName, settingName, subTextMd }: { providerNam
 		voidSettingsService.setSettingOfProvider(providerName, settingName, newVal)
 	}, [voidSettingsService, providerName, settingName]);
 
+	// catch obviously-wrong keys (e.g. "123", "xyz") immediately, before waiting on any network verification
+	const expectedFormat = settingName === 'apiKey' ? apiKeyFormatOfProvider[providerName] : undefined
+	const looksLikeWrongFormat = !!expectedFormat && settingValue.length > 0 && !expectedFormat.test(settingValue)
+
 	return <ErrorBoundary>
 		<div className='my-1'>
 			<div className='relative'>
@@ -650,6 +654,11 @@ const ProviderSetting = ({ providerName, settingName, subTextMd }: { providerNam
 					</button>
 				)}
 			</div>
+			{looksLikeWrongFormat && (
+				<div className='py-1 px-3 text-sm text-red-400'>
+					This doesn't look like a valid {displayInfoOfProviderName(providerName).title} API key.
+				</div>
+			)}
 			{!subTextMd ? null : <div className='py-1 px-3 opacity-50 text-sm'>
 				{subTextMd}
 			</div>}

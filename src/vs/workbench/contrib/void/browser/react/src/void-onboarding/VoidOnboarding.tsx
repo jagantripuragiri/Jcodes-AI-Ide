@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { useAccessor, useIsDark, useSettingsState } from '../util/services.js';
-import { Brain, ChevronRight, Cloud, DollarSign, ExternalLink, Gift, Lock, Monitor, Plus, X } from 'lucide-react';
-import { displayInfoOfProviderName, ProviderName, providerNames, localProviderNames, featureNames, isFeatureNameDisabled } from '../../../../common/voidSettingsTypes.js';
+import { useAccessor, useIsDark, useRefreshModelState, useSettingsState } from '../util/services.js';
+import { Brain, Check, ChevronRight, Cloud, DollarSign, ExternalLink, Gift, Loader2, Lock, Monitor, Plus, X } from 'lucide-react';
+import { displayInfoOfProviderName, ProviderName, providerNames, localProviderNames, featureNames, isFeatureNameDisabled, keyVerifiableProviderNames, RefreshableProviderName } from '../../../../common/voidSettingsTypes.js';
 import { ChatMarkdownRender } from '../markdown/ChatMarkdownRender.js';
 import { OllamaSetupInstructions, SettingsForProvider, ModelDump } from '../void-settings-tsx/Settings.js';
 import { VoidCustomDropdownBox } from '../util/inputs.js';
@@ -147,9 +147,42 @@ const tabIconOfTab: Record<TabName, React.FC<any>> = {
 	'Cloud/Other': Cloud,
 };
 
+// shows whether the entered API key was actually verified against the provider, for providers we can auto-verify
+const ProviderStatusBadge = ({ providerName }: { providerName: ProviderName }) => {
+	const refreshModelState = useRefreshModelState();
+
+	const isVerifiable = (keyVerifiableProviderNames as string[]).includes(providerName);
+	if (!isVerifiable) {
+		return <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-500">Active</span>;
+	}
+
+	const { state } = refreshModelState[providerName as RefreshableProviderName];
+	if (state === 'refreshing') {
+		return (
+			<span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-void-bg-2 text-void-fg-3">
+				<Loader2 className="w-3 h-3 animate-spin" /> Verifying key...
+			</span>
+		);
+	}
+	if (state === 'error') {
+		return (
+			<span className="text-xs px-2 py-0.5 rounded-full bg-red-950 text-red-400">Key not valid</span>
+		);
+	}
+	if (state === 'finished') {
+		return (
+			<span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-500">
+				<Check className="w-3 h-3" /> Key verified
+			</span>
+		);
+	}
+	return null;
+};
+
 const AddProvidersPage = ({ pageIndex, setPageIndex }: { pageIndex: number, setPageIndex: (index: number) => void }) => {
 	const [currentTab, setCurrentTab] = useState<TabName>('Free');
 	const settingsState = useSettingsState();
+	const refreshModelState = useRefreshModelState();
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	const [addProviderName, setAddProviderName] = useState<ProviderName>(providerNamesOfTab['Free'][0]);
@@ -237,7 +270,7 @@ const AddProvidersPage = ({ pageIndex, setPageIndex }: { pageIndex: number, setP
 						<div className="flex items-center gap-2 mb-3">
 							<div className="text-lg font-medium">{displayInfoOfProviderName(providerName).title}</div>
 							{settingsState.settingsOfProvider[providerName]._didFillInProviderSettings && (
-								<span className="text-xs px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-500">Active</span>
+								<ProviderStatusBadge providerName={providerName} />
 							)}
 							{providerName === 'gemini' && (
 								<span
@@ -282,13 +315,27 @@ const AddProvidersPage = ({ pageIndex, setPageIndex }: { pageIndex: number, setP
 					onClick={() => {
 						const isDisabled = isFeatureNameDisabled('Chat', settingsState)
 
-						if (!isDisabled) {
-							setPageIndex(pageIndex + 1);
-							setErrorMessage(null);
-						} else {
-							// Show error message
+						if (isDisabled) {
 							setErrorMessage("Please set up at least one Chat model before moving on.");
+							return;
 						}
+
+						// block if the chat provider's key failed live verification (e.g. a garbage string that only passed the length check)
+						const chatProviderName = settingsState.modelSelectionOfFeature['Chat']?.providerName
+						if (chatProviderName && (keyVerifiableProviderNames as string[]).includes(chatProviderName)) {
+							const { state } = refreshModelState[chatProviderName as RefreshableProviderName]
+							if (state === 'error') {
+								setErrorMessage(`${displayInfoOfProviderName(chatProviderName).title}'s API key could not be verified. Please check it and try again.`);
+								return;
+							}
+							if (state === 'refreshing') {
+								setErrorMessage(`Still verifying ${displayInfoOfProviderName(chatProviderName).title}'s API key...`);
+								return;
+							}
+						}
+
+						setPageIndex(pageIndex + 1);
+						setErrorMessage(null);
 					}}
 				/>
 			</div>
@@ -499,6 +546,7 @@ const VoidOnboardingContent = () => {
 	const voidMetricsService = accessor.get('IMetricsService')
 
 	const voidSettingsState = useSettingsState()
+	const refreshModelState = useRefreshModelState()
 
 	const [pageIndex, setPageIndex] = useState(0)
 
@@ -546,7 +594,12 @@ const VoidOnboardingContent = () => {
 	const isApiKeyLongEnoughIfApiKeyExists = selectedProviderName && voidSettingsState.settingsOfProvider[selectedProviderName].apiKey ? voidSettingsState.settingsOfProvider[selectedProviderName].apiKey.length > 15 : true
 	const isAtLeastOneModel = selectedProviderName && voidSettingsState.settingsOfProvider[selectedProviderName].models.length >= 1
 
-	const didFillInSelectedProviderSettings = !!(didFillInProviderSettings && isApiKeyLongEnoughIfApiKeyExists && isAtLeastOneModel)
+	// for providers we can actually test the key against (openAI, deepseek, groq, xAI, mistral, openRouter), require the live verification to succeed - a garbage string that merely passes the length check should not be accepted
+	const isKeyVerifiable = selectedProviderName && (keyVerifiableProviderNames as string[]).includes(selectedProviderName)
+	const keyVerifyState = selectedProviderName && isKeyVerifiable ? refreshModelState[selectedProviderName as RefreshableProviderName].state : null
+	const isApiKeyVerifiedIfVerifiable = !isKeyVerifiable || keyVerifyState === 'finished'
+
+	const didFillInSelectedProviderSettings = !!(didFillInProviderSettings && isApiKeyLongEnoughIfApiKeyExists && isAtLeastOneModel && isApiKeyVerifiedIfVerifiable)
 
 	const prevAndNextButtons = <div className="max-w-[600px] w-full mx-auto flex flex-col items-end">
 		<div className="flex items-center gap-2">

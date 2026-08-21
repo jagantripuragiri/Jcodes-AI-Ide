@@ -42,7 +42,12 @@ const refreshBasedOn: { [k in RefreshableProviderName]: (keyof SettingsOfProvide
 	ollama: ['_didFillInProviderSettings', 'endpoint'],
 	vLLM: ['_didFillInProviderSettings', 'endpoint'],
 	lmStudio: ['_didFillInProviderSettings', 'endpoint'],
-	// openAICompatible: ['_didFillInProviderSettings', 'endpoint', 'apiKey'],
+	openAI: ['_didFillInProviderSettings', 'apiKey'],
+	deepseek: ['_didFillInProviderSettings', 'apiKey'],
+	groq: ['_didFillInProviderSettings', 'apiKey'],
+	xAI: ['_didFillInProviderSettings', 'apiKey'],
+	mistral: ['_didFillInProviderSettings', 'apiKey'],
+	openRouter: ['_didFillInProviderSettings', 'apiKey'],
 }
 const REFRESH_INTERVAL = 5_000
 // const COOLDOWN_TIMEOUT = 300
@@ -139,6 +144,12 @@ export class RefreshModelService extends Disposable implements IRefreshModelServ
 		ollama: { state: 'init', timeoutId: null },
 		vLLM: { state: 'init', timeoutId: null },
 		lmStudio: { state: 'init', timeoutId: null },
+		openAI: { state: 'init', timeoutId: null },
+		deepseek: { state: 'init', timeoutId: null },
+		groq: { state: 'init', timeoutId: null },
+		xAI: { state: 'init', timeoutId: null },
+		mistral: { state: 'init', timeoutId: null },
+		openRouter: { state: 'init', timeoutId: null },
 	}
 
 
@@ -167,9 +178,7 @@ export class RefreshModelService extends Disposable implements IRefreshModelServ
 					providerName,
 					models.map(model => {
 						if (providerName === 'ollama') return (model as OllamaModelResponse).name;
-						else if (providerName === 'vLLM') return (model as OpenaiCompatibleModelResponse).id;
-						else if (providerName === 'lmStudio') return (model as OpenaiCompatibleModelResponse).id;
-						else throw new Error('refreshMode fn: unknown provider', providerName);
+						else return (model as OpenaiCompatibleModelResponse).id;
 					}),
 					{ enableProviderOnSuccess: options.enableProviderOnSuccess, hideRefresh: options.doNotFire }
 				)

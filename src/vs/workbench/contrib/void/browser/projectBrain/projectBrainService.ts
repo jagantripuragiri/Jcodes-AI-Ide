@@ -48,6 +48,14 @@ const INDEX_WRITE_DEBOUNCE_MS = 5000
 // per-file cap on how much text is inlined into the Ask Brain prompt, so a handful of large
 // matched files can't blow out the context window
 const ASK_BRAIN_EXCERPT_CHARS = 4000
+// generic words that shouldn't count as filename-matching signal (e.g. "explain the architecture"
+// should match on "architecture", not dilute/misfire on "explain"/"the")
+const ASK_BRAIN_STOPWORDS = new Set([
+	'the', 'and', 'for', 'are', 'was', 'were', 'has', 'have', 'had', 'does', 'did', 'doing',
+	'what', 'when', 'where', 'why', 'how', 'who', 'which', 'this', 'that', 'these', 'those',
+	'explain', 'describe', 'show', 'tell', 'give', 'find', 'list', 'summarize', 'overview',
+	'project', 'code', 'codebase', 'about', 'with', 'from', 'into', 'work', 'works', 'file', 'files',
+])
 const SCAN_PHASE_ORDER: ScanPhaseId[] = [
 	'detect-project-type', 'read-package-config', 'map-directories', 'classify-files', 'find-entry-points',
 	'map-dependencies', 'detect-architecture', 'build-relationships', 'analyze-git-history', 'generate-insights',
@@ -663,19 +671,34 @@ class ProjectBrainService extends Disposable implements IProjectBrainService {
 	private _matchRelevantFiles(query: string, limit: number): ScannedFile[] {
 		const index = this._state.index
 		if (!index) return []
-		const keywords = query.toLowerCase().split(/\W+/).filter(w => w.length > 2)
-		if (keywords.length === 0) return []
-		const scored = index.files.map(f => {
+		const keywords = query.toLowerCase().split(/\W+/)
+			.filter(w => w.length > 2 && !ASK_BRAIN_STOPWORDS.has(w))
+		const scored = keywords.length ? index.files.map(f => {
 			const lower = f.relPath.toLowerCase()
+			const categoryLabel = FILE_CATEGORY_LABELS[f.category].toLowerCase()
 			let score = 0
 			for (const kw of keywords) {
 				if (lower.includes(kw)) score += 2
-				if (f.category === kw) score += 1
+				if (f.category === kw || categoryLabel.includes(kw)) score += 1
 			}
 			return { f, score }
-		}).filter(x => x.score > 0)
+		}).filter(x => x.score > 0) : []
 		scored.sort((a, b) => b.score - a.score)
-		return scored.slice(0, limit).map(x => x.f)
+		const matched = scored.slice(0, limit).map(x => x.f)
+
+		// broad/generic questions (or queries whose keywords don't hit any filename) don't score
+		// any files above - fall back to a representative slice of the project (entry points, docs,
+		// one file per structural category) so the model still gets real content instead of nothing
+		if (matched.length < limit) {
+			const seen = new Set(matched.map(f => f.relPath))
+			const priorityCategories: FileCategory[] = ['entry', 'doc', 'api', 'service', 'model', 'auth', 'component', 'config']
+			for (const category of priorityCategories) {
+				if (matched.length >= limit) break
+				const candidate = index.files.find(f => f.category === category && !seen.has(f.relPath))
+				if (candidate) { matched.push(candidate); seen.add(candidate.relPath) }
+			}
+		}
+		return matched.slice(0, limit)
 	}
 
 	// ---------- incremental updates ----------

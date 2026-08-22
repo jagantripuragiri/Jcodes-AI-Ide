@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAccessor, useIsDark, useRefreshModelState, useSettingsState } from '../util/services.js';
 import { Brain, Check, ChevronRight, Cloud, DollarSign, ExternalLink, Gift, Loader2, Lock, Monitor, Plus, X } from 'lucide-react';
-import { displayInfoOfProviderName, ProviderName, providerNames, localProviderNames, featureNames, isFeatureNameDisabled, keyVerifiableProviderNames, RefreshableProviderName } from '../../../../common/voidSettingsTypes.js';
+import { displayInfoOfProviderName, ProviderName, providerNames, localProviderNames, featureNames, isFeatureNameDisabled, keyVerifiableProviderNames, RefreshableProviderName, apiKeyFormatOfProvider } from '../../../../common/voidSettingsTypes.js';
 import { ChatMarkdownRender } from '../markdown/ChatMarkdownRender.js';
 import { OllamaSetupInstructions, SettingsForProvider, ModelDump } from '../void-settings-tsx/Settings.js';
 import { VoidCustomDropdownBox } from '../util/inputs.js';
@@ -150,6 +150,13 @@ const tabIconOfTab: Record<TabName, React.FC<any>> = {
 // shows whether the entered API key was actually verified against the provider, for providers we can auto-verify
 const ProviderStatusBadge = ({ providerName }: { providerName: ProviderName }) => {
 	const refreshModelState = useRefreshModelState();
+	const settingsState = useSettingsState();
+
+	const apiKey = (settingsState.settingsOfProvider[providerName] as { apiKey?: string }).apiKey;
+	const expectedFormat = apiKeyFormatOfProvider[providerName];
+	if (apiKey && expectedFormat && !expectedFormat.test(apiKey)) {
+		return <span className="text-xs px-2 py-0.5 rounded-full bg-red-950 text-red-400">Key doesn't look valid</span>;
+	}
 
 	const isVerifiable = (keyVerifiableProviderNames as string[]).includes(providerName);
 	if (!isVerifiable) {
@@ -313,6 +320,19 @@ const AddProvidersPage = ({ pageIndex, setPageIndex }: { pageIndex: number, setP
 				<PreviousButton onClick={() => setPageIndex(pageIndex - 1)} />
 				<NextButton
 					onClick={() => {
+						// block if ANY configured provider's key is obviously the wrong shape (e.g. "123", "xyz"), regardless of which provider is currently selected for Chat
+						for (const pn of providerNames) {
+							const providerSettings = settingsState.settingsOfProvider[pn]
+							if (!providerSettings._didFillInProviderSettings) continue
+							const apiKey = (providerSettings as { apiKey?: string }).apiKey
+							if (!apiKey) continue
+							const expectedFormat = apiKeyFormatOfProvider[pn]
+							if (expectedFormat && !expectedFormat.test(apiKey)) {
+								setErrorMessage(`${displayInfoOfProviderName(pn).title}'s API key doesn't look valid. Please check it and try again.`);
+								return;
+							}
+						}
+
 						const isDisabled = isFeatureNameDisabled('Chat', settingsState)
 
 						if (isDisabled) {

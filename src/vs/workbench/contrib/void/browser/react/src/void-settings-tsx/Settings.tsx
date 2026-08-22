@@ -787,7 +787,7 @@ const ActiveModelIndicator = () => {
 
 export const VoidProviderSettings = ({ providerNames }: { providerNames: ProviderName[] }) => {
 	return <>
-		{['microsoftAzure' as ProviderName].map(providerName =>
+		{providerNames.map(providerName =>
 			<SettingsForProvider key={providerName} providerName={providerName} showProviderTitle={true} showProviderSuggestions={true} />
 		)}
 	</>
@@ -1072,21 +1072,6 @@ const MCPServersList = () => {
 
 export const Settings = () => {
 	const isDark = useIsDark()
-	// ─── sidebar nav ──────────────────────────
-	const [selectedSection, setSelectedSection] =
-		useState<Tab>('models');
-	const [selectedModelProvider, setSelectedModelProvider] =
-		useState<ProviderName>('microsoftAzure');
-
-	const navItems: { tab: Tab; label: string }[] = [
-		{ tab: 'models', label: 'Models' },
-		{ tab: 'providers', label: 'Azure Configuration' },
-		// { tab: 'featureOptions', label: 'Feature Options' }, // hidden - not needed for this build
-		// { tab: 'general', label: 'General' }, // hidden - not needed for this build
-		// { tab: 'mcp', label: 'MCP' }, // hidden - not needed for this build
-		{ tab: 'all', label: 'All Settings' },
-	];
-	const shouldShowTab = (tab: Tab) => selectedSection === 'all' || selectedSection === tab;
 	const accessor = useAccessor()
 	const commandService = accessor.get('ICommandService')
 	const environmentService = accessor.get('IEnvironmentService')
@@ -1166,35 +1151,7 @@ export const Settings = () => {
 
 	return (
 		<div className={`@@void-scope ${isDark ? 'dark' : ''}`} style={{ height: '100%', width: '100%', overflow: 'auto' }}>
-			<div className="flex flex-col md:flex-row w-full gap-6 max-w-[900px] mx-auto mb-32" style={{ minHeight: '80vh' }}>
-				{/* ──────────────  SIDEBAR  ────────────── */}
-
-				<aside className="md:w-1/4 w-full p-6 shrink-0">
-					{/* vertical tab list */}
-					<div className="flex flex-col gap-2 mt-12">
-						{navItems.map(({ tab, label }) => (
-							<button
-								key={tab}
-								onClick={() => {
-									if (tab === 'all') {
-										setSelectedSection('all');
-										window.scrollTo({ top: 0, behavior: 'smooth' });
-									} else {
-										setSelectedSection(tab);
-									}
-								}}
-								className={`
-          py-2 px-4 rounded-md text-left transition-all duration-200
-          ${selectedSection === tab
-										? 'bg-black text-white dark:bg-white dark:text-black font-medium shadow-sm'
-										: 'bg-void-bg-2 hover:bg-void-bg-2/80 text-void-fg-1'}
-        `}
-							>
-								{label}
-							</button>
-						))}
-					</div>
-				</aside>
+			<div className="flex flex-col w-full max-w-[900px] mx-auto mb-32" style={{ minHeight: '80vh' }}>
 
 				{/* ───────────── MAIN PANE ───────────── */}
 				<main className="flex-1 p-6 select-none">
@@ -1216,46 +1173,30 @@ export const Settings = () => {
 
 						{/* All sections in flex container with gap-12 */}
 						<div className='flex flex-col gap-12'>
-							{/* Models section (formerly FeaturesTab) */}
-							<div className={shouldShowTab('models') ? `` : 'hidden'}>
+							{/* Models Configuration section - API keys + models, all in one place */}
+							<div>
 								<ErrorBoundary>
-									<h2 className={`text-3xl mb-2`}>Models</h2>
-
-									{/* provider picker - avoids dumping every provider's models on screen at once */}
-									<div className='flex items-center gap-2 mb-2'>
-										<span className='text-void-fg-3 text-sm'>Provider</span>
-										<ErrorBoundary>
-											<VoidCustomDropdownBox
-												options={providerNames}
-												selectedOption={selectedModelProvider}
-												onChangeOption={(pn) => setSelectedModelProvider(pn)}
-												getOptionDisplayName={(pn) => displayInfoOfProviderName(pn).title}
-												getOptionDropdownName={(pn) => displayInfoOfProviderName(pn).title}
-												getOptionsEqual={(a, b) => a === b}
-												className="max-w-48 w-full resize-none bg-void-bg-1 text-void-fg-1 border border-void-border-2 focus:border-void-border-1 py-1 px-2 rounded"
-												arrowTouchesText={false}
-											/>
-										</ErrorBoundary>
-									</div>
-
-									<ModelDump filteredProviders={[selectedModelProvider]} />
-									<div className='w-full h-[1px] my-4' />
-									<AutoDetectLocalModelsToggle />
-									<RefreshableModels />
-								</ErrorBoundary>
-							</div>
-
-							{/* Main Providers section */}
-							<div className={shouldShowTab('providers') ? `` : 'hidden'}>
-								<ErrorBoundary>
-									<h2 className={`text-3xl mb-2`}>Azure Configuration</h2>
-									<h3 className={`text-void-fg-3 mb-2`}>{`J code's uses Azure OpenAI for all AI features.`}</h3>
+									<h2 className={`text-3xl mb-2`}>Models Configuration</h2>
+									<h3 className={`text-void-fg-3 mb-2`}>{`Add API keys and manage models for each provider.`}</h3>
 
 									<ErrorBoundary>
 										<ActiveModelIndicator />
 									</ErrorBoundary>
 
-									<VoidProviderSettings providerNames={['microsoftAzure']} />
+									<div className='flex flex-col gap-8'>
+										{providerNames.map(providerName => (
+											<div key={providerName} className='pb-6 border-b border-void-border-2 last:border-b-0'>
+												<ErrorBoundary>
+													<SettingsForProvider providerName={providerName} showProviderTitle={true} showProviderSuggestions={true} />
+													<ModelDump filteredProviders={[providerName]} />
+												</ErrorBoundary>
+											</div>
+										))}
+									</div>
+
+									<div className='w-full h-[1px] my-4' />
+									<AutoDetectLocalModelsToggle />
+									<RefreshableModels />
 								</ErrorBoundary>
 							</div>
 

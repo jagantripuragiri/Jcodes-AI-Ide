@@ -398,6 +398,7 @@ export const apiKeyFormatOfProvider: Partial<Record<ProviderName, RegExp>> = {
 	groq: /^gsk_/,
 	xAI: /^xai-/,
 	openRouter: /^sk-or-/,
+	gemini: /^AIza/,
 }
 
 

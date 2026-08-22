@@ -613,7 +613,9 @@ const ProviderSetting = ({ providerName, settingName, subTextMd }: { providerNam
 
 	// Create a stable callback reference using useCallback with proper dependencies
 	const handleChangeValue = useCallback((newVal: string) => {
-		voidSettingsService.setSettingOfProvider(providerName, settingName, newVal)
+		// strip whitespace/newlines that often sneak in from copy-pasting a key (e.g. trailing newline), which would otherwise make a real key look invalid or fail the provider's own check
+		const cleanedVal = settingName === 'apiKey' ? newVal.trim() : newVal
+		voidSettingsService.setSettingOfProvider(providerName, settingName, cleanedVal)
 	}, [voidSettingsService, providerName, settingName]);
 
 	// catch obviously-wrong keys (e.g. "123", "xyz") immediately, before waiting on any network verification

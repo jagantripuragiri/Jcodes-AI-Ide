@@ -3,7 +3,7 @@ import { ILLMMessageService } from './sendLLMMessageService.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable, IDisposable } from '../../../../base/common/lifecycle.js';
 import { RefreshableProviderName, refreshableProviderNames, SettingsOfProvider } from './voidSettingsTypes.js';
-import { OllamaModelResponse, OpenaiCompatibleModelResponse } from './sendLLMMessageTypes.js';
+import { OllamaModelResponse, OpenaiCompatibleModelResponse, GeminiModelResponse } from './sendLLMMessageTypes.js';
 import { registerSingleton, InstantiationType } from '../../../../platform/instantiation/common/extensions.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 
@@ -48,6 +48,7 @@ const refreshBasedOn: { [k in RefreshableProviderName]: (keyof SettingsOfProvide
 	xAI: ['_didFillInProviderSettings', 'apiKey'],
 	mistral: ['_didFillInProviderSettings', 'apiKey'],
 	openRouter: ['_didFillInProviderSettings', 'apiKey'],
+	gemini: ['_didFillInProviderSettings', 'apiKey'],
 }
 const REFRESH_INTERVAL = 5_000
 // const COOLDOWN_TIMEOUT = 300
@@ -150,6 +151,7 @@ export class RefreshModelService extends Disposable implements IRefreshModelServ
 		xAI: { state: 'init', timeoutId: null },
 		mistral: { state: 'init', timeoutId: null },
 		openRouter: { state: 'init', timeoutId: null },
+		gemini: { state: 'init', timeoutId: null },
 	}
 
 
@@ -178,6 +180,7 @@ export class RefreshModelService extends Disposable implements IRefreshModelServ
 					providerName,
 					models.map(model => {
 						if (providerName === 'ollama') return (model as OllamaModelResponse).name;
+						else if (providerName === 'gemini') return (model as GeminiModelResponse).name.replace(/^models\//, '');
 						else return (model as OpenaiCompatibleModelResponse).id;
 					}),
 					{ enableProviderOnSuccess: options.enableProviderOnSuccess, hideRefresh: options.doNotFire }

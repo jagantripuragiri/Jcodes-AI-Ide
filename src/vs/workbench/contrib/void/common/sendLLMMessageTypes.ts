@@ -193,6 +193,10 @@ export type OpenaiCompatibleModelResponse = {
 	owned_by: string;
 }
 
+export type GeminiModelResponse = {
+	name: string; // e.g. "models/gemini-2.0-flash"
+}
+
 
 
 // params to the true list fn

@@ -380,8 +380,8 @@ export const displayInfoOfFeatureName = (featureName: FeatureName) => {
 }
 
 
-// cloud providers that use an OpenAI-compatible SDK, so listing their models also verifies the API key
-export const keyVerifiableProviderNames = ['openAI', 'deepseek', 'groq', 'xAI', 'mistral', 'openRouter'] satisfies ProviderName[]
+// cloud providers where we can actually call the provider's list-models endpoint to verify the API key works
+export const keyVerifiableProviderNames = ['openAI', 'deepseek', 'groq', 'xAI', 'mistral', 'openRouter', 'gemini'] satisfies ProviderName[]
 
 // the models of these can be refreshed (in theory all can, but not all should)
 export const refreshableProviderNames = [...localProviderNames, ...keyVerifiableProviderNames] satisfies ProviderName[]
@@ -398,7 +398,7 @@ export const apiKeyFormatOfProvider: Partial<Record<ProviderName, RegExp>> = {
 	groq: /^gsk_/,
 	xAI: /^xai-/,
 	openRouter: /^sk-or-/,
-	gemini: /^AIza/,
+	// gemini keys usually start with "AIza" but Google doesn't document this as a stable guarantee, so we don't hard-block on it (better to let a stray malformed key through than reject a real one)
 }
 
 

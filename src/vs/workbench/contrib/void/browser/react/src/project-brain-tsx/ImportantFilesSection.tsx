@@ -98,7 +98,7 @@ const ImportantFilesGroupCard = ({ cat, files, openFile, onFocusFile }: {
 				<span className='text-void-fg-4 font-normal'>· {files.length}</span>
 			</span>
 		</SectionHeading>
-		<div className='-mx-1'>
+		<div className={`-mx-1 ${expanded ? 'max-h-72 overflow-y-auto' : ''}`}>
 			{visibleFiles.map(f => (
 				<div key={f.relPath} className='group flex items-center gap-1 rounded-md hover:bg-void-bg-2-hover transition-colors'>
 					<button onClick={() => openFile(f.relPath)} className='flex-1 min-w-0 text-left text-xs font-mono text-void-fg-2 group-hover:text-void-fg-1 truncate px-2.5 py-1.5'>

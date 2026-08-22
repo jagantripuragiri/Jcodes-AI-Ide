@@ -788,12 +788,27 @@ const ApiKeyValidator = ({ providerName }: { providerName: ProviderName }) => {
 	const refreshModelState = useRefreshModelState();
 	const settingsState = useSettingsState();
 
+	// the underlying check is a real network request to the provider's list-models endpoint with no
+	// built-in timeout, so a slow/unreachable network can leave it "Verifying..." indefinitely - warn the user instead of just spinning forever
+	const [isSlow, setIsSlow] = useState(false)
+	const slowTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
 	const apiKey = (settingsState.settingsOfProvider[providerName] as { apiKey?: string }).apiKey;
 	const expectedFormat = apiKeyFormatOfProvider[providerName];
 
 	const isVerifiable = (keyVerifiableProviderNames as string[]).includes(providerName)
 	const looksWrongFormat = !!apiKey && !!expectedFormat && !expectedFormat.test(apiKey)
 	const state = isVerifiable ? refreshModelState[providerName as RefreshableProviderName].state : undefined
+
+	useEffect(() => {
+		if (state !== 'refreshing') {
+			setIsSlow(false)
+			if (slowTimeoutRef.current) clearTimeout(slowTimeoutRef.current)
+			return
+		}
+		slowTimeoutRef.current = setTimeout(() => setIsSlow(true), 8000)
+		return () => { if (slowTimeoutRef.current) clearTimeout(slowTimeoutRef.current) }
+	}, [state])
 
 	let content: React.ReactNode
 	if (looksWrongFormat) {
@@ -808,7 +823,7 @@ const ApiKeyValidator = ({ providerName }: { providerName: ProviderName }) => {
 	else if (state === 'refreshing') {
 		content = (
 			<span className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-void-bg-2 text-void-fg-3">
-				<Loader2 className="w-3 h-3 animate-spin" /> Verifying key...
+				<Loader2 className="w-3 h-3 animate-spin" /> {isSlow ? 'Still verifying — this is taking longer than usual, check your network' : 'Verifying key...'}
 			</span>
 		)
 	}

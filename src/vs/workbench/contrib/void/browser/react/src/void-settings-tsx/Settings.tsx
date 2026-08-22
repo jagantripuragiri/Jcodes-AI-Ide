@@ -1199,9 +1199,6 @@ export const Settings = () => {
 										<ModelDump filteredProviders={[selectedModelProvider]} />
 									</ErrorBoundary>
 
-									<div className='w-full h-[1px] my-4' />
-									<AutoDetectLocalModelsToggle />
-									<RefreshableModels />
 								</ErrorBoundary>
 							</div>
 

@@ -79,30 +79,44 @@ export const ImportantFilesSection = ({ index, focusRelPath, onFocusFile, onClea
 
 	return <div className='max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4'>
 		{groups.map(({ cat, files }) => (
-			<Card key={cat} className='p-3.5'>
-				<SectionHeading subtitle={FILE_CATEGORY_DESCRIPTIONS[cat]}>
-					<span className='inline-flex items-center gap-1.5 normal-case text-xs font-medium text-void-fg-1 tracking-normal'>
-						<CategoryIcon category={cat} className='size-3.5' />{FILE_CATEGORY_LABELS[cat]}
-						<span className='text-void-fg-4 font-normal'>· {files.length}</span>
-					</span>
-				</SectionHeading>
-				<div className='-mx-1'>
-					{files.slice(0, MAX_PER_GROUP).map(f => (
-						<div key={f.relPath} className='group flex items-center gap-1 rounded-md hover:bg-void-bg-2-hover transition-colors'>
-							<button onClick={() => openFile(f.relPath)} className='flex-1 min-w-0 text-left text-xs font-mono text-void-fg-2 group-hover:text-void-fg-1 truncate px-2.5 py-1.5'>
-								{f.relPath}
-							</button>
-							<button
-								onClick={() => onFocusFile(f.relPath)}
-								className='shrink-0 text-[10px] text-void-fg-4 hover:text-void-fg-1 px-2 py-1 mr-1 rounded hover:bg-void-bg-2 opacity-0 group-hover:opacity-100 transition-opacity'
-							>
-								Explain
-							</button>
-						</div>
-					))}
-				</div>
-				{files.length > MAX_PER_GROUP && <div className='text-[11px] text-void-fg-4 mt-1 px-2.5'>+{files.length - MAX_PER_GROUP} more</div>}
-			</Card>
+			<ImportantFilesGroupCard key={cat} cat={cat} files={files} openFile={openFile} onFocusFile={onFocusFile} />
 		))}
 	</div>
+}
+
+const ImportantFilesGroupCard = ({ cat, files, openFile, onFocusFile }: {
+	cat: FileCategory, files: ProjectBrainIndex['files'], openFile: (relPath: string) => void, onFocusFile: (relPath: string) => void,
+}) => {
+	const [expanded, setExpanded] = React.useState(false)
+	const visibleFiles = expanded ? files : files.slice(0, MAX_PER_GROUP)
+	const remaining = files.length - MAX_PER_GROUP
+
+	return <Card className='p-3.5'>
+		<SectionHeading subtitle={FILE_CATEGORY_DESCRIPTIONS[cat]}>
+			<span className='inline-flex items-center gap-1.5 normal-case text-xs font-medium text-void-fg-1 tracking-normal'>
+				<CategoryIcon category={cat} className='size-3.5' />{FILE_CATEGORY_LABELS[cat]}
+				<span className='text-void-fg-4 font-normal'>· {files.length}</span>
+			</span>
+		</SectionHeading>
+		<div className='-mx-1'>
+			{visibleFiles.map(f => (
+				<div key={f.relPath} className='group flex items-center gap-1 rounded-md hover:bg-void-bg-2-hover transition-colors'>
+					<button onClick={() => openFile(f.relPath)} className='flex-1 min-w-0 text-left text-xs font-mono text-void-fg-2 group-hover:text-void-fg-1 truncate px-2.5 py-1.5'>
+						{f.relPath}
+					</button>
+					<button
+						onClick={() => onFocusFile(f.relPath)}
+						className='shrink-0 text-[10px] text-void-fg-4 hover:text-void-fg-1 px-2 py-1 mr-1 rounded hover:bg-void-bg-2 opacity-0 group-hover:opacity-100 transition-opacity'
+					>
+						Explain
+					</button>
+				</div>
+			))}
+		</div>
+		{remaining > 0 && (
+			expanded
+				? <button onClick={() => setExpanded(false)} className='text-[11px] text-void-fg-4 hover:text-void-fg-1 mt-1 px-2.5 py-1 transition-colors'>Show less</button>
+				: <button onClick={() => setExpanded(true)} className='text-[11px] text-void-fg-4 hover:text-void-fg-1 mt-1 px-2.5 py-1 transition-colors'>+{remaining} more</button>
+		)}
+	</Card>
 }

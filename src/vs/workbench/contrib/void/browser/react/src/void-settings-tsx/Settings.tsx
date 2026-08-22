@@ -1064,6 +1064,8 @@ const MCPServersList = () => {
 
 export const Settings = () => {
 	const isDark = useIsDark()
+	const [selectedModelProvider, setSelectedModelProvider] =
+		useState<ProviderName>('microsoftAzure');
 	const accessor = useAccessor()
 	const commandService = accessor.get('ICommandService')
 	const environmentService = accessor.get('IEnvironmentService')
@@ -1175,16 +1177,27 @@ export const Settings = () => {
 										<ActiveModelIndicator />
 									</ErrorBoundary>
 
-									<div className='flex flex-col gap-8'>
-										{providerNames.map(providerName => (
-											<div key={providerName} className='pb-6 border-b border-void-border-2 last:border-b-0'>
-												<ErrorBoundary>
-													<SettingsForProvider providerName={providerName} showProviderTitle={true} showProviderSuggestions={true} />
-													<ModelDump filteredProviders={[providerName]} />
-												</ErrorBoundary>
-											</div>
-										))}
+									{/* provider picker - avoids dumping every provider's settings on screen at once */}
+									<div className='flex items-center gap-2 mb-4'>
+										<span className='text-void-fg-3 text-sm'>Provider</span>
+										<ErrorBoundary>
+											<VoidCustomDropdownBox
+												options={providerNames}
+												selectedOption={selectedModelProvider}
+												onChangeOption={(pn) => setSelectedModelProvider(pn)}
+												getOptionDisplayName={(pn) => displayInfoOfProviderName(pn).title}
+												getOptionDropdownName={(pn) => displayInfoOfProviderName(pn).title}
+												getOptionsEqual={(a, b) => a === b}
+												className="max-w-48 w-full resize-none bg-void-bg-1 text-void-fg-1 border border-void-border-2 focus:border-void-border-1 py-1 px-2 rounded"
+												arrowTouchesText={false}
+											/>
+										</ErrorBoundary>
 									</div>
+
+									<ErrorBoundary>
+										<SettingsForProvider providerName={selectedModelProvider} showProviderTitle={true} showProviderSuggestions={true} />
+										<ModelDump filteredProviders={[selectedModelProvider]} />
+									</ErrorBoundary>
 
 									<div className='w-full h-[1px] my-4' />
 									<AutoDetectLocalModelsToggle />

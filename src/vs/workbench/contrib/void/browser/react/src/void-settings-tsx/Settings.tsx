@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'; // Added useRef import just in case it was missed, though likely already present
-import { ProviderName, SettingName, displayInfoOfSettingName, providerNames, VoidStatefulModelInfo, customSettingNamesOfProvider, RefreshableProviderName, refreshableProviderNames, displayInfoOfProviderName, nonlocalProviderNames, localProviderNames, GlobalSettingName, featureNames, displayInfoOfFeatureName, isProviderNameDisabled, FeatureName, hasDownloadButtonsOnModelsProviderNames, subTextMdOfProviderName, apiKeyFormatOfProvider } from '../../../../common/voidSettingsTypes.js'
+import { ProviderName, SettingName, displayInfoOfSettingName, providerNames, VoidStatefulModelInfo, customSettingNamesOfProvider, RefreshableProviderName, refreshableProviderNames, displayInfoOfProviderName, nonlocalProviderNames, localProviderNames, GlobalSettingName, featureNames, displayInfoOfFeatureName, isProviderNameDisabled, FeatureName, hasDownloadButtonsOnModelsProviderNames, subTextMdOfProviderName, apiKeyFormatOfProvider, keyVerifiableProviderNames } from '../../../../common/voidSettingsTypes.js'
 import ErrorBoundary from '../sidebar-tsx/ErrorBoundary.js'
 import { VoidButtonBgDarken, VoidCustomDropdownBox, VoidInputBox2, VoidSimpleInputBox, VoidSwitch } from '../util/inputs.js'
 import { useAccessor, useIsDark, useIsOptedOut, useRefreshModelListener, useRefreshModelState, useSettingsState } from '../util/services.js'
@@ -778,6 +778,74 @@ const ActiveModelIndicator = () => {
 }
 
 
+// shows whether the entered API key was actually verified against the provider, for providers we can auto-verify,
+// and lets the user manually trigger a verification instead of waiting for one to fire off a settings edit
+const ApiKeyValidator = ({ providerName }: { providerName: ProviderName }) => {
+	const accessor = useAccessor()
+	const refreshModelService = accessor.get('IRefreshModelService')
+	const metricsService = accessor.get('IMetricsService')
+
+	const refreshModelState = useRefreshModelState();
+	const settingsState = useSettingsState();
+
+	const apiKey = (settingsState.settingsOfProvider[providerName] as { apiKey?: string }).apiKey;
+	const expectedFormat = apiKeyFormatOfProvider[providerName];
+
+	const isVerifiable = (keyVerifiableProviderNames as string[]).includes(providerName)
+	const looksWrongFormat = !!apiKey && !!expectedFormat && !expectedFormat.test(apiKey)
+	const state = isVerifiable ? refreshModelState[providerName as RefreshableProviderName].state : undefined
+
+	let content: React.ReactNode
+	if (looksWrongFormat) {
+		content = <span className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-red-950 text-red-400">Key doesn't look valid</span>
+	}
+	else if (!isVerifiable) {
+		content = <span className="text-xs px-2 py-1 rounded-full bg-void-bg-2 text-void-fg-3">Verification not available for this provider</span>
+	}
+	else if (!apiKey) {
+		content = <span className="text-xs px-2 py-1 rounded-full bg-void-bg-2 text-void-fg-3">Enter an API key to verify</span>
+	}
+	else if (state === 'refreshing') {
+		content = (
+			<span className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-void-bg-2 text-void-fg-3">
+				<Loader2 className="w-3 h-3 animate-spin" /> Verifying key...
+			</span>
+		)
+	}
+	else if (state === 'error') {
+		content = <span className="text-xs px-2 py-1 rounded-full bg-red-950 text-red-400">Key not valid</span>
+	}
+	else if (state === 'finished') {
+		content = (
+			<span className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-emerald-950 text-emerald-500">
+				<Check className="w-3 h-3" /> Key verified
+			</span>
+		)
+	}
+	else {
+		content = <span className="text-xs px-2 py-1 rounded-full bg-void-bg-2 text-void-fg-3">Not yet verified</span>
+	}
+
+	const canClickVerify = isVerifiable && !!apiKey && !looksWrongFormat && state !== 'refreshing'
+
+	return <div className='flex items-center gap-3 mt-2'>
+		<span className='text-void-fg-3 text-xs'>API Key Status</span>
+		{content}
+		{isVerifiable && <button
+			type='button'
+			disabled={!canClickVerify}
+			onClick={() => {
+				refreshModelService.startRefreshingModels(providerName as RefreshableProviderName, { enableProviderOnSuccess: true, doNotFire: false })
+				metricsService.capture('Click', { providerName, action: 'Verify API Key' })
+			}}
+			className='text-xs px-2 py-1 rounded-full border border-void-border-2 text-void-fg-2 hover:bg-void-bg-2 disabled:opacity-40 disabled:cursor-default transition-colors'
+		>
+			Verify
+		</button>}
+	</div>
+}
+
+
 export const VoidProviderSettings = ({ providerNames }: { providerNames: ProviderName[] }) => {
 	return <>
 		{providerNames.map(providerName =>
@@ -1205,6 +1273,12 @@ export const Settings = () => {
 										<div className='text-xs font-medium uppercase tracking-wide text-void-fg-3 mb-2'>Models</div>
 										<ErrorBoundary>
 											<ModelDump filteredProviders={[selectedModelProvider]} />
+										</ErrorBoundary>
+
+										<div className='w-full h-px bg-void-border-2 my-5' />
+
+										<ErrorBoundary>
+											<ApiKeyValidator providerName={selectedModelProvider} />
 										</ErrorBoundary>
 									</div>
 

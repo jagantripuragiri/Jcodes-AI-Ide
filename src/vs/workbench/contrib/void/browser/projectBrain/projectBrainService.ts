@@ -45,6 +45,9 @@ const INCREMENTAL_UPDATE_DEBOUNCE_MS = 1500
 // disk writes are batched separately from in-memory updates so a burst of saves (e.g. a
 // find-and-replace across many files) doesn't serialize+write the whole index once per file
 const INDEX_WRITE_DEBOUNCE_MS = 5000
+// per-file cap on how much text is inlined into the Ask Brain prompt, so a handful of large
+// matched files can't blow out the context window
+const ASK_BRAIN_EXCERPT_CHARS = 4000
 const SCAN_PHASE_ORDER: ScanPhaseId[] = [
 	'detect-project-type', 'read-package-config', 'map-directories', 'classify-files', 'find-entry-points',
 	'map-dependencies', 'detect-architecture', 'build-relationships', 'analyze-git-history', 'generate-insights',
@@ -83,7 +86,7 @@ export interface IProjectBrainService {
 	getWhatChanged(): WhatChangedResult | null
 	getContextSummary(userQuery: string): string | null
 	search(query: string): ProjectBrainSearchResults
-	askBrain(question: string, handlers: AskBrainHandlers): string | null
+	askBrain(question: string, handlers: AskBrainHandlers): Promise<string | null>
 	abortAsk(requestId: string): void
 	// cross-command -> React signal used by commands like "Show Architecture" to tell an
 	// already-mounted (or about-to-mount) dashboard which tab to land on
@@ -240,14 +243,19 @@ class ProjectBrainService extends Disposable implements IProjectBrainService {
 		}
 	}
 
-	askBrain(question: string, handlers: AskBrainHandlers): string | null {
+	async askBrain(question: string, handlers: AskBrainHandlers): Promise<string | null> {
 		const index = this._state.index
 		if (!index) { handlers.onError('Project Brain has not been built yet.'); return null }
 
+		const rootURI = this._workspaceRootURI()
 		const relevantFiles = this._matchRelevantFiles(question, 10)
 		const references: AskBrainReference[] = relevantFiles.map(f => ({ relPath: f.relPath, reason: `classified as ${FILE_CATEGORY_LABELS[f.category]}` }))
+		const fileExcerpts = rootURI ? await this._readFileExcerpts(rootURI, relevantFiles) : []
 		const contextBlock = this.getContextSummary(question) ?? ''
-		const systemMessage = `You are Project Brain, J code's built-in project-understanding assistant. Answer the developer's question about THIS project using only the indexed context below - do not invent files or facts that aren't listed. Be concise and concrete. When you reference a file, use its exact relative path.\n\n${contextBlock}`
+		const excerptsBlock = fileExcerpts.length
+			? '\n\n' + fileExcerpts.map(e => `--- ${e.relPath} ---\n${e.text}`).join('\n\n')
+			: ''
+		const systemMessage = `You are Project Brain, J code's built-in project-understanding assistant. Answer the developer's question about THIS project using only the indexed context and file excerpts below - do not invent files or facts that aren't listed. Be concise and concrete. When you reference a file, use its exact relative path.\n\n${contextBlock}${excerptsBlock}`
 
 		const featureName: FeatureName = 'Chat'
 		const modelSelection = this.voidSettingsService.state.modelSelectionOfFeature[featureName]
@@ -636,6 +644,20 @@ class ProjectBrainService extends Disposable implements IProjectBrainService {
 	private _basenameKey(relPath: string): string {
 		const name = relPath.slice(relPath.lastIndexOf('/') + 1)
 		return name.replace(/\.(test|spec)\.[jt]sx?$/i, '').replace(/\.[^.]+$/, '')
+	}
+
+	private async _readFileExcerpts(rootURI: URI, files: ScannedFile[]): Promise<{ relPath: string, text: string }[]> {
+		const results = await Promise.all(files.map(async (f) => {
+			try {
+				const content = await this.fileService.readFile(toUri(rootURI, f.relPath))
+				if (content.value.byteLength > MAX_TEXT_SCAN_BYTES) return null
+				const text = content.value.toString().slice(0, ASK_BRAIN_EXCERPT_CHARS)
+				return { relPath: f.relPath, text }
+			} catch {
+				return null
+			}
+		}))
+		return results.filter((r): r is { relPath: string, text: string } => r !== null)
 	}
 
 	private _matchRelevantFiles(query: string, limit: number): ScannedFile[] {

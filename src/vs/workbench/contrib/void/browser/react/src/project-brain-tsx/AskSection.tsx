@@ -35,11 +35,12 @@ export const AskSection = ({ prefillQuestion }: { prefillQuestion?: string }) =>
 		setReferences([])
 		setError(null)
 		setIsStreaming(true)
-		requestIdRef.current = accessor.get('IProjectBrainService').askBrain(text, {
+		requestIdRef.current = null
+		accessor.get('IProjectBrainService').askBrain(text, {
 			onText: (fullTextSoFar) => setAnswer(fullTextSoFar),
 			onFinalMessage: (fullText, refs) => { setAnswer(fullText); setReferences(refs); setIsStreaming(false) },
 			onError: (message) => { setError(message); setIsStreaming(false) },
-		})
+		}).then(requestId => { requestIdRef.current = requestId })
 	}
 
 	const abort = () => {

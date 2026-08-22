@@ -2540,14 +2540,17 @@ const Checkpoint = ({ message, threadId, messageIdx, isCheckpointGhost, threadIs
 	}, [isRunning, streamState])
 
 	return <div
-		className={`flex items-center justify-center px-2 `}
+		className={`flex items-center justify-center px-2 py-1 `}
 	>
 		<div
 			className={`
-                    text-xs
+                    text-[11px]
                     text-void-fg-3
                     select-none
-                    ${isCheckpointGhost ? 'opacity-50' : 'opacity-100'}
+                    rounded-full border border-void-border-2
+                    px-2.5 py-0.5
+                    hover:bg-void-bg-1 transition-colors duration-100
+                    ${isCheckpointGhost ? 'opacity-50' : 'opacity-90'}
 					${isDisabled ? 'cursor-default' : 'cursor-pointer'}
                 `}
 			style={{ position: 'relative', display: 'inline-block' }} // allow absolute icon
@@ -2880,43 +2883,44 @@ const CommandBarInChat = () => {
 	)
 
 	return (
-		<>
-			{/* file details */}
-			<div className='px-2'>
+		<div className='px-2'>
+			<div
+				className={`
+					select-none
+					w-full rounded-xl bg-void-bg-2
+					text-void-fg-3 text-xs text-nowrap
+					border border-void-border-2
+					overflow-hidden
+				`}
+			>
+				{/* file details */}
 				<div
 					className={`
-						select-none
-						flex w-full rounded-t-lg bg-void-bg-3
-						text-void-fg-3 text-xs text-nowrap
-
+						flex w-full
 						overflow-hidden transition-all duration-200 ease-in-out
-						${isFileDetailsOpened ? 'max-h-24' : 'max-h-0'}
+						${isFileDetailsOpened ? 'max-h-24 py-1.5 border-b border-void-border-2' : 'max-h-0'}
 					`}
 				>
 					{fileDetailsContent}
 				</div>
-			</div>
-			{/* main content */}
-			<div
-				className={`
-					select-none
-					flex w-full rounded-t-lg bg-void-bg-3
-					text-void-fg-3 text-xs text-nowrap
-					border-t border-l border-r border-void-border-2
-
-					px-2 py-1
-					justify-between
-				`}
-			>
-				<div className="flex gap-2 items-center">
-					{fileDetailsButton}
-				</div>
-				<div className="flex gap-2 items-center">
-					{acceptRejectAllButtons}
-					{threadStatusHTML}
+				{/* main content */}
+				<div
+					className={`
+						flex w-full
+						px-2.5 py-1.5
+						justify-between
+					`}
+				>
+					<div className="flex gap-2 items-center">
+						{fileDetailsButton}
+					</div>
+					<div className="flex gap-2 items-center">
+						{acceptRejectAllButtons}
+						{threadStatusHTML}
+					</div>
 				</div>
 			</div>
-		</>
+		</div>
 	)
 }
 
@@ -3176,7 +3180,7 @@ export const SidebarChat = () => {
 	const isLandingPage = previousMessages.length === 0
 
 
-	const initiallySuggestedPromptsHTML = <div className='flex flex-col gap-2 w-full text-nowrap text-void-fg-3 select-none'>
+	const initiallySuggestedPromptsHTML = <div className='flex flex-col gap-1.5 w-full text-nowrap select-none'>
 		{[
 			'Summarize my codebase',
 			'Generate a PRD for this Code base',
@@ -3184,7 +3188,7 @@ export const SidebarChat = () => {
 		].map((text, index) => (
 			<div
 				key={index}
-				className='py-1 px-2 rounded text-sm border border-void-border-2 bg-void-bg-2 hover:bg-vscode-list-hover-bg cursor-pointer opacity-80 hover:opacity-100'
+				className='py-2 px-2.5 rounded-lg text-sm text-void-fg-2 hover:bg-void-bg-1 hover:text-void-fg-1 transition-colors duration-100 cursor-pointer'
 				onClick={() => onSubmit(text)}
 			>
 				{text}
@@ -3195,39 +3199,43 @@ export const SidebarChat = () => {
 
 
 	const threadPageInput = <div key={'input' + chatThreadsState.currentThreadId}>
-		<div className='px-4'>
-			<CommandBarInChat />
-		</div>
-		<div className='px-2 pb-2'>
+		<CommandBarInChat />
+		<div className='px-2 pb-2 pt-1.5'>
 			{inputChatArea}
 		</div>
 	</div>
 
 	const landingPageInput = <div>
-		<div className='pt-8'>
-			{inputChatArea}
-		</div>
+		{inputChatArea}
 	</div>
 
 	const landingPageContent = <div
 		ref={sidebarRef}
 		className='w-full h-full max-h-full flex flex-col overflow-auto px-4'
 	>
+		<div className='flex-1 min-h-8 max-h-20' />
+
+		<div className='text-center text-[22px] font-medium text-void-fg-1 select-none mb-5 px-2'>
+			Where should we begin?
+		</div>
+
 		<ErrorBoundary>
 			{landingPageInput}
 		</ErrorBoundary>
 
 		{Object.keys(chatThreadsState.allThreads).length > 1 ? // show if there are threads
 			<ErrorBoundary>
-				<div className='pt-8 mb-2 text-void-fg-3 text-root select-none pointer-events-none'>Previous Threads</div>
+				<div className='pt-8 mb-1 text-void-fg-3 text-xs font-medium tracking-wide select-none pointer-events-none px-2.5'>PREVIOUS THREADS</div>
 				<PastThreadsList />
 			</ErrorBoundary>
 			:
 			<ErrorBoundary>
-				<div className='pt-8 mb-2 text-void-fg-3 text-root select-none pointer-events-none'>Suggestions</div>
+				<div className='pt-8 mb-1 text-void-fg-3 text-xs font-medium tracking-wide select-none pointer-events-none px-2.5'>SUGGESTIONS</div>
 				{initiallySuggestedPromptsHTML}
 			</ErrorBoundary>
 		}
+
+		<div className='pb-6' />
 	</div>
 
 

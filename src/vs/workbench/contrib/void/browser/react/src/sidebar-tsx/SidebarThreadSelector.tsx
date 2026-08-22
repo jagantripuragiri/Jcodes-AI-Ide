@@ -38,7 +38,7 @@ export const PastThreadsList = ({ className = '' }: { className?: string }) => {
 	const displayThreads = showAll ? sortedThreadIds : sortedThreadIds.slice(0, numInitialThreads);
 
 	return (
-		<div className={`flex flex-col mb-2 gap-2 w-full text-nowrap text-void-fg-3 select-none relative ${className}`}>
+		<div className={`flex flex-col w-full text-nowrap text-void-fg-3 select-none relative ${className}`}>
 			{displayThreads.length === 0 // this should never happen
 				? <></>
 				: displayThreads.map((threadId, i) => {
@@ -62,7 +62,7 @@ export const PastThreadsList = ({ className = '' }: { className?: string }) => {
 
 			{hasMoreThreads && !showAll && (
 				<div
-					className="text-void-fg-3 opacity-80 hover:opacity-100 hover:brightness-115 cursor-pointer p-1 text-xs"
+					className="text-void-fg-3 opacity-70 hover:opacity-100 cursor-pointer px-2.5 py-1.5 text-xs rounded-md hover:bg-void-bg-1"
 					onClick={() => setShowAll(true)}
 				>
 					Show {sortedThreadIds.length - numInitialThreads} more...
@@ -70,7 +70,7 @@ export const PastThreadsList = ({ className = '' }: { className?: string }) => {
 			)}
 			{hasMoreThreads && showAll && (
 				<div
-					className="text-void-fg-3 opacity-80 hover:opacity-100 hover:brightness-115 cursor-pointer p-1 text-xs"
+					className="text-void-fg-3 opacity-70 hover:opacity-100 cursor-pointer px-2.5 py-1.5 text-xs rounded-md hover:bg-void-bg-1"
 					onClick={() => setShowAll(false)}
 				>
 					Show less
@@ -214,21 +214,15 @@ const PastThreadElement = ({ pastThread, idx, hoveredIdx, setHoveredIdx, isRunni
 
 	const numMessages = pastThread.messages.filter((msg) => msg.role === 'assistant' || msg.role === 'user').length;
 
-	const detailsHTML = <span
-	// data-tooltip-id='void-tooltip'
-	// data-tooltip-content={`Last modified ${formatTime(new Date(pastThread.lastModified))}`}
-	// data-tooltip-place='top'
-	>
-		<span className='opacity-60'>{numMessages}</span>
-		{` `}
+	const detailsHTML = <span className='text-xs whitespace-nowrap'>
 		{formatDate(new Date(pastThread.lastModified))}
-		{/* {` messages `} */}
 	</span>
 
 	return <div
 		key={pastThread.id}
 		className={`
-			py-1 px-2 rounded text-sm border border-void-border-2 bg-void-bg-2 hover:bg-vscode-list-hover-bg cursor-pointer opacity-80 hover:opacity-100
+			py-2 px-2.5 rounded-lg text-sm cursor-pointer
+			hover:bg-void-bg-1 transition-colors duration-100
 		`}
 		onClick={() => {
 			chatThreadsService.switchToThread(pastThread.id);
@@ -236,25 +230,23 @@ const PastThreadElement = ({ pastThread, idx, hoveredIdx, setHoveredIdx, isRunni
 		onMouseEnter={() => setHoveredIdx(idx)}
 		onMouseLeave={() => setHoveredIdx(null)}
 	>
-		<div className="flex items-center justify-between gap-1">
+		<div className="flex items-center justify-between gap-2">
 			<span className="flex items-center gap-2 min-w-0 overflow-hidden">
 				{/* spinner */}
-				{isRunning === 'LLM' || isRunning === 'tool' || isRunning === 'idle' ? <LoaderCircle className="animate-spin bg-void-stroke-1 flex-shrink-0 flex-grow-0" size={14} />
+				{isRunning === 'LLM' || isRunning === 'tool' || isRunning === 'idle' ? <LoaderCircle className="animate-spin text-void-fg-3 flex-shrink-0 flex-grow-0" size={13} />
 					:
-					isRunning === 'awaiting_user' ? <MessageCircleQuestion className="bg-void-stroke-1 flex-shrink-0 flex-grow-0" size={14} />
+					isRunning === 'awaiting_user' ? <MessageCircleQuestion className="text-void-fg-3 flex-shrink-0 flex-grow-0" size={13} />
 						:
 						null}
 				{/* name */}
-				<span className="truncate overflow-hidden text-ellipsis"
+				<span className="truncate overflow-hidden text-ellipsis text-void-fg-1"
 					data-tooltip-id='void-tooltip'
 					data-tooltip-content={numMessages + ' messages'}
 					data-tooltip-place='top'
 				>{firstMsg}</span>
-
-				{/* <span className='opacity-60'>{`(${numMessages})`}</span> */}
 			</span>
 
-			<div className="flex items-center gap-x-1 opacity-60">
+			<div className="flex items-center gap-x-1 flex-shrink-0 text-void-fg-3">
 				{idx === hoveredIdx ?
 					<>
 						{/* trash icon */}

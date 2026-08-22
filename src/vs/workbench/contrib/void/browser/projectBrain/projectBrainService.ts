@@ -42,6 +42,9 @@ import {
 import { readProjectBrainIndex, writeProjectBrainIndex } from './projectBrainPersistence.js';
 
 const INCREMENTAL_UPDATE_DEBOUNCE_MS = 1500
+// disk writes are batched separately from in-memory updates so a burst of saves (e.g. a
+// find-and-replace across many files) doesn't serialize+write the whole index once per file
+const INDEX_WRITE_DEBOUNCE_MS = 5000
 const SCAN_PHASE_ORDER: ScanPhaseId[] = [
 	'detect-project-type', 'read-package-config', 'map-directories', 'classify-files', 'find-entry-points',
 	'map-dependencies', 'detect-architecture', 'build-relationships', 'analyze-git-history', 'generate-insights',
@@ -104,6 +107,7 @@ class ProjectBrainService extends Disposable implements IProjectBrainService {
 
 	private readonly _scmProxy: IVoidSCMService
 	private _scanPromise: Promise<void> | null = null
+	private _writeDelayer: Delayer<void> | null = null
 
 	constructor(
 		@IFileService private readonly fileService: IFileService,
@@ -294,6 +298,19 @@ class ProjectBrainService extends Disposable implements IProjectBrainService {
 	private _setState(partial: Partial<ProjectBrainState>): void {
 		this._state = { ...this._state, ...partial }
 		this._onDidChangeState.fire()
+	}
+
+	// coalesces disk writes so a burst of index mutations (many incremental updates, or an
+	// incremental update following close behind a full scan) results in one write, not one per mutation
+	private _scheduleIndexWrite(rootURI: URI, index: ProjectBrainIndex): void {
+		if (!this._writeDelayer) this._writeDelayer = this._register(new Delayer<void>(INDEX_WRITE_DEBOUNCE_MS))
+		this._writeDelayer.trigger(async () => {
+			try {
+				await writeProjectBrainIndex(this.fileService, rootURI, index)
+			} catch (e) {
+				console.error('[Project Brain] Failed to persist index:', e)
+			}
+		})
 	}
 
 	private _markActive(id: ScanPhaseId): void {
@@ -677,32 +694,51 @@ class ProjectBrainService extends Disposable implements IProjectBrainService {
 		const index = this._state.index
 		if (!index) return
 
-		for (const relPath of changedRelPaths) {
-			const uri = toUri(rootURI, relPath)
-			const exists = await this.fileService.exists(uri)
+		type FileUpdate =
+			| { kind: 'removed', relPath: string }
+			| { kind: 'skip' }
+			| { kind: 'upserted', relPath: string, ext: string, category: FileCategory, imports: string[], issues: IssueEntry[] }
 
-			if (!exists) {
-				index.files = index.files.filter(f => f.relPath !== relPath)
-				index.issues = index.issues.filter(i => i.relPath !== relPath)
+		// resolve/read all changed files concurrently (same chunking as the full scan) instead of
+		// one-at-a-time, then apply results to the index sequentially so mutation stays race-free
+		const CHUNK_SIZE = 25
+		const updates: FileUpdate[] = []
+		for (let i = 0; i < changedRelPaths.length; i += CHUNK_SIZE) {
+			const chunk = changedRelPaths.slice(i, i + CHUNK_SIZE)
+			const chunkResults = await Promise.all(chunk.map(async (relPath): Promise<FileUpdate> => {
+				const uri = toUri(rootURI, relPath)
+				const exists = await this.fileService.exists(uri)
+				if (!exists) return { kind: 'removed', relPath }
+
+				const stat = await this.fileService.resolve(uri, { resolveMetadata: false }).catch(() => null)
+				if (!stat || stat.isDirectory) return { kind: 'skip' } // directory-level changes need a real rescan (Refresh Project Brain)
+
+				const ext = relPath.includes('.') ? relPath.slice(relPath.lastIndexOf('.')) : ''
+				const category = classifyFile(relPath)
+				let issues: IssueEntry[] = []
+				try {
+					const content = await this.fileService.readFile(uri)
+					if (content.value.byteLength <= MAX_TEXT_SCAN_BYTES) {
+						issues = scanTextForIssues(relPath, content.value.toString())
+					}
+				} catch { /* unreadable - leave without issues */ }
+				return { kind: 'upserted', relPath, ext, category, imports: [], issues }
+			}))
+			updates.push(...chunkResults)
+		}
+
+		for (const update of updates) {
+			if (update.kind === 'skip') continue
+			if (update.kind === 'removed') {
+				index.files = index.files.filter(f => f.relPath !== update.relPath)
+				index.issues = index.issues.filter(i => i.relPath !== update.relPath)
 				continue
 			}
-
-			const stat = await this.fileService.resolve(uri, { resolveMetadata: false }).catch(() => null)
-			if (!stat || stat.isDirectory) continue // directory-level changes need a real rescan (Refresh Project Brain)
-
-			const ext = relPath.includes('.') ? relPath.slice(relPath.lastIndexOf('.')) : ''
-			const category = classifyFile(relPath)
-			let file = index.files.find(f => f.relPath === relPath)
-			if (!file) { file = { relPath, ext, category, imports: [] }; index.files.push(file) }
-			else { file.category = category }
-
-			index.issues = index.issues.filter(i => i.relPath !== relPath)
-			try {
-				const content = await this.fileService.readFile(uri)
-				if (content.value.byteLength <= MAX_TEXT_SCAN_BYTES) {
-					index.issues.push(...scanTextForIssues(relPath, content.value.toString()))
-				}
-			} catch { /* unreadable - leave without issues */ }
+			let file = index.files.find(f => f.relPath === update.relPath)
+			if (!file) { file = { relPath: update.relPath, ext: update.ext, category: update.category, imports: update.imports }; index.files.push(file) }
+			else { file.category = update.category }
+			index.issues = index.issues.filter(i => i.relPath !== update.relPath)
+			index.issues.push(...update.issues)
 		}
 
 		index.meta.filesIndexed = index.files.length
@@ -715,7 +751,7 @@ class ProjectBrainService extends Disposable implements IProjectBrainService {
 		})
 
 		this._setState({ index: { ...index } })
-		await writeProjectBrainIndex(this.fileService, rootURI, index)
+		this._scheduleIndexWrite(rootURI, index)
 	}
 }
 

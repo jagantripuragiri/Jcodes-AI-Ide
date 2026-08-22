@@ -121,7 +121,7 @@ export const Card = ({ children, className = '' }: { children: React.ReactNode, 
 export const SectionHeading = ({ children, action, subtitle }: { children: React.ReactNode, action?: React.ReactNode, subtitle?: React.ReactNode }) => (
 	<div className='flex items-start justify-between gap-3 mb-3'>
 		<div className='min-w-0'>
-			<h3 className='text-[11px] font-semibold uppercase tracking-wide text-void-fg-3'>{children}</h3>
+			<h3 className='text-[11px] font-semibold uppercase tracking-wide text-void-fg-3 truncate'>{children}</h3>
 			{subtitle && <p className='text-[11px] text-void-fg-4 mt-0.5'>{subtitle}</p>}
 		</div>
 		{action && <div className='shrink-0'>{action}</div>}

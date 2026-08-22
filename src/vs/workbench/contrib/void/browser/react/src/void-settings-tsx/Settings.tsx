@@ -19,16 +19,6 @@ import { useMCPServiceState } from '../util/services.js';
 import { OPT_OUT_KEY } from '../../../../common/storageKeys.js';
 import { StorageScope, StorageTarget } from '../../../../../../../platform/storage/common/storage.js';
 
-type Tab =
-	| 'models'
-	| 'localProviders'
-	| 'providers'
-	| 'featureOptions'
-	| 'mcp'
-	| 'general'
-	| 'all';
-
-
 const ButtonLeftTextRightOption = ({ text, leftButton }: { text: string, leftButton?: React.ReactNode }) => {
 
 	return <div className='flex items-center text-void-fg-3 px-3 py-0.5 rounded-sm overflow-hidden gap-2'>

@@ -451,9 +451,9 @@ export const ModelDump = ({ filteredProviders }: { filteredProviders?: ProviderN
 				`}
 			>
 				{/* left part is width:full */}
-				<div className={`flex flex-grow items-center gap-4`}>
-					<span className='w-full max-w-32'>{isNewProviderName ? providerTitle : ''}</span>
-					<span className='w-fit max-w-[400px] truncate'>{modelName}</span>
+				<div className={`flex flex-grow items-center gap-3 min-w-0`}>
+					<span className='w-32 shrink-0 truncate text-void-fg-3 text-xs'>{isNewProviderName ? providerTitle : ''}</span>
+					<span className='min-w-0 truncate'>{modelName}</span>
 				</div>
 
 				{/* right part is anything that fits */}
@@ -623,12 +623,13 @@ const ProviderSetting = ({ providerName, settingName, subTextMd }: { providerNam
 	const looksLikeWrongFormat = !!expectedFormat && settingValue.length > 0 && !expectedFormat.test(settingValue)
 
 	return <ErrorBoundary>
-		<div className='my-1'>
+		<div className='my-3'>
+			<label className='block text-xs font-medium text-void-fg-3 mb-1 px-0.5'>{settingTitle}</label>
 			<div className='relative'>
 				<VoidSimpleInputBox
 					value={settingValue}
 					onChangeValue={handleChangeValue}
-					placeholder={`${settingTitle} (${placeholder})`}
+					placeholder={placeholder}
 					passwordBlur={isPasswordField && !isRevealed}
 					compact={true}
 					className={isPasswordField ? 'pr-8' : ''}
@@ -1170,34 +1171,42 @@ export const Settings = () => {
 							{/* Models Configuration section - API keys + models, all in one place */}
 							<div>
 								<ErrorBoundary>
-									<h2 className={`text-3xl mb-2`}>Models Configuration</h2>
-									<h3 className={`text-void-fg-3 mb-2`}>{`Add API keys and manage models for each provider.`}</h3>
+									<h2 className={`text-3xl mb-1`}>Models Configuration</h2>
+									<h3 className={`text-void-fg-3 mb-4 text-sm`}>{`Add API keys and manage models for each provider.`}</h3>
 
 									<ErrorBoundary>
 										<ActiveModelIndicator />
 									</ErrorBoundary>
 
-									{/* provider picker - avoids dumping every provider's settings on screen at once */}
-									<div className='flex items-center gap-2 mb-4'>
-										<span className='text-void-fg-3 text-sm'>Provider</span>
+									<div className='rounded-lg border border-void-border-2 bg-void-bg-1/40 p-5'>
+										{/* provider picker - avoids dumping every provider's settings on screen at once */}
+										<div className='flex items-center gap-3 mb-5'>
+											<span className='text-void-fg-3 text-xs font-medium uppercase tracking-wide'>Provider</span>
+											<ErrorBoundary>
+												<VoidCustomDropdownBox
+													options={providerNames}
+													selectedOption={selectedModelProvider}
+													onChangeOption={(pn) => setSelectedModelProvider(pn)}
+													getOptionDisplayName={(pn) => displayInfoOfProviderName(pn).title}
+													getOptionDropdownName={(pn) => displayInfoOfProviderName(pn).title}
+													getOptionsEqual={(a, b) => a === b}
+													className="max-w-60 w-full resize-none bg-void-bg-1 text-void-fg-1 border border-void-border-2 focus:border-void-border-1 py-1.5 px-3 rounded-md"
+													arrowTouchesText={false}
+												/>
+											</ErrorBoundary>
+										</div>
+
 										<ErrorBoundary>
-											<VoidCustomDropdownBox
-												options={providerNames}
-												selectedOption={selectedModelProvider}
-												onChangeOption={(pn) => setSelectedModelProvider(pn)}
-												getOptionDisplayName={(pn) => displayInfoOfProviderName(pn).title}
-												getOptionDropdownName={(pn) => displayInfoOfProviderName(pn).title}
-												getOptionsEqual={(a, b) => a === b}
-												className="max-w-48 w-full resize-none bg-void-bg-1 text-void-fg-1 border border-void-border-2 focus:border-void-border-1 py-1 px-2 rounded"
-												arrowTouchesText={false}
-											/>
+											<SettingsForProvider providerName={selectedModelProvider} showProviderTitle={false} showProviderSuggestions={true} />
+										</ErrorBoundary>
+
+										<div className='w-full h-px bg-void-border-2 my-5' />
+
+										<div className='text-xs font-medium uppercase tracking-wide text-void-fg-3 mb-2'>Models</div>
+										<ErrorBoundary>
+											<ModelDump filteredProviders={[selectedModelProvider]} />
 										</ErrorBoundary>
 									</div>
-
-									<ErrorBoundary>
-										<SettingsForProvider providerName={selectedModelProvider} showProviderTitle={true} showProviderSuggestions={true} />
-										<ModelDump filteredProviders={[selectedModelProvider]} />
-									</ErrorBoundary>
 
 								</ErrorBoundary>
 							</div>

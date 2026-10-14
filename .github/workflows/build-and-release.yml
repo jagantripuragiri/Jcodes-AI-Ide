@@ -142,6 +142,7 @@ jobs:
           git config --global --add url."https://github.com/".insteadOf "git@github.com:"
           export ELECTRON_SKIP_BINARY_DOWNLOAD=1
           export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+          export npm_config_foreground_scripts=true
           npm install
 
       - name: Show npm debug logs on failure

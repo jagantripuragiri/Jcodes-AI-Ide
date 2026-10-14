@@ -137,20 +137,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           npm_config_github_token: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Git-hosted deps (ssh2, simple-socks) must be fetched over HTTPS; runners have no SSH key
-          git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
-          git config --global --add url."https://github.com/".insteadOf "git@github.com:"
           export ELECTRON_SKIP_BINARY_DOWNLOAD=1
           export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-          export npm_config_foreground_scripts=true
+          # npm 10.9.9 silently exits 1 while installing git deps (extensions/open-remote-ssh); 10.9.8 is the last known good
           npm install -g npm@10.9.8
-          npm --version
           npm install
-
-      - name: Show npm debug logs on failure
-        if: failure()
-        run: |
-          for f in $(ls -t ~/.npm/_logs/*.log | head -4); do echo "=== $f"; grep -v -E ' (http (cache|fetch)|silly) ' "$f" | head -120; done
 
       - name: Build React Components
         run: npm run buildreact

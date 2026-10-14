@@ -147,7 +147,7 @@ jobs:
       - name: Show npm debug logs on failure
         if: failure()
         run: |
-          for f in $(ls -t ~/.npm/_logs/*.log | head -4); do echo "=== $f"; tail -n 40 "$f"; done
+          for f in $(ls -t ~/.npm/_logs/*.log | head -4); do echo "=== $f"; grep -v -E ' (http (cache|fetch)|silly) ' "$f" | head -120; done
 
       - name: Build React Components
         run: npm run buildreact

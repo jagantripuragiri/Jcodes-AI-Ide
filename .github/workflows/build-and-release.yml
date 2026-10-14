@@ -137,6 +137,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           npm_config_github_token: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Git-hosted deps (ssh2, simple-socks) must be fetched over HTTPS; runners have no SSH key
+          git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+          git config --global --add url."https://github.com/".insteadOf "git@github.com:"
           export ELECTRON_SKIP_BINARY_DOWNLOAD=1
           export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
           npm install

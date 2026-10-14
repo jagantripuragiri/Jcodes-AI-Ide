@@ -143,6 +143,8 @@ jobs:
           export ELECTRON_SKIP_BINARY_DOWNLOAD=1
           export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
           export npm_config_foreground_scripts=true
+          npm install -g npm@10.9.8
+          npm --version
           npm install
 
       - name: Show npm debug logs on failure

@@ -144,6 +144,11 @@ jobs:
           export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
           npm install
 
+      - name: Show npm debug logs on failure
+        if: failure()
+        run: |
+          for f in $(ls -t ~/.npm/_logs/*.log | head -3); do echo "=== $f"; grep -n -i -E 'error|ERR!|fatal|denied|gyp|verbose stack' "$f" | tail -60; done
+
       - name: Build React Components
         run: npm run buildreact
 

@@ -95,6 +95,19 @@ jobs:
       - name: Compile and Package Windows App
         run: node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-win32-x64
 
+      - name: Stamp J_ icon onto app executable
+        shell: bash
+        run: |
+          node -e "
+          const rcedit = require('rcedit');
+          const path = require('path');
+          const exe = path.resolve('..', 'VSCode-win32-x64', \"J code's.exe\");
+          rcedit(exe, { icon: path.resolve('resources/win32/code.ico') }, err => {
+            if (err) { console.error(err); process.exit(1); }
+            console.log('Icon applied to', exe);
+          });
+          "
+
       - name: Build InnoSetup Windows Installer (.exe)
         run: node --max-old-space-size=8192 ./node_modules/gulp/bin/gulp.js vscode-win32-x64-user-setup
 

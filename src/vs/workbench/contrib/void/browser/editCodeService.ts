@@ -461,7 +461,6 @@ class EditCodeService extends Disposable implements IEditCodeService {
 			if (diffArea.type !== 'CtrlKZone') continue
 			if (!diffArea._mountInfo) {
 				diffArea._mountInfo = this._addCtrlKZoneInput(diffArea)
-				console.log('MOUNTED CTRLK', diffArea.diffareaid)
 			}
 			else {
 				diffArea._mountInfo.refresh()
@@ -1443,7 +1442,6 @@ class EditCodeService extends Disposable implements IEditCodeService {
 
 		// helpers
 		const onDone = () => {
-			console.log('called onDone')
 			diffZone._streamState = { isStreaming: false, }
 			this._onDidChangeStreamingInDiffZone.fire({ uri, diffareaid: diffZone.diffareaid })
 

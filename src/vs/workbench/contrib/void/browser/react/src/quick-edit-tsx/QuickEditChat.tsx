@@ -107,11 +107,7 @@ export const QuickEditChat = ({
 				ref={useCallback((r: HTMLTextAreaElement | null) => {
 					textAreaRef.current = r
 					textAreaRef_(r)
-					r?.addEventListener('keydown', (e) => {
-						if (e.key === 'Escape')
-							onX()
-					})
-				}, [textAreaRef_, onX])}
+				}, [textAreaRef_])}
 				fnsRef={textAreaFnsRef}
 				placeholder="Enter instructions..."
 				onChangeText={useCallback((newStr: string) => {
@@ -119,6 +115,10 @@ export const QuickEditChat = ({
 					onChangeText_(newStr)
 				}, [onChangeText_])}
 				onKeyDown={(e) => {
+					if (e.key === 'Escape') {
+						onX()
+						return
+					}
 					if (e.key === 'Enter' && !e.shiftKey) {
 						onSubmit()
 						return

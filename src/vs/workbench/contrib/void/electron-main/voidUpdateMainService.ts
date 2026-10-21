@@ -3,7 +3,9 @@ import { IEnvironmentMainService } from '../../../../platform/environment/electr
 import { IProductService } from '../../../../platform/product/common/productService.js';
 import { IUpdateService, StateType } from '../../../../platform/update/common/update.js';
 import { IVoidUpdateService } from '../common/voidUpdateService.js';
-import { isNewerVersion, JCODES_DOWNLOADS_URL, JCODES_GITHUB_URL, JCODES_LATEST_RELEASE_API_URL, JCODES_RECENT_RELEASES_API_URL, JCodesRelease, VoidCheckUpdateRespose } from '../common/voidUpdateServiceTypes.js';
+import { ILifecycleMainService } from '../../../../platform/lifecycle/electron-main/lifecycleMainService.js';
+import { isNewerVersion, JCODES_DOWNLOADS_URL, JCODES_GITHUB_URL, JCODES_LATEST_RELEASE_API_URL, JCODES_RECENT_RELEASES_API_URL, JCODES_RELEASE_BY_TAG_API_URL, JCodesRelease, JCodesUpdateProgress, VoidCheckUpdateRespose } from '../common/voidUpdateServiceTypes.js';
+import { JCodesInstaller, pickInstallableAsset } from './jcodesInstaller.js';
 
 type GitHubReleaseJSON = {
 	tag_name?: string,
@@ -13,11 +15,28 @@ type GitHubReleaseJSON = {
 	html_url?: string,
 	draft?: boolean,
 	prerelease?: boolean,
-	assets?: { name?: string, browser_download_url?: string, size?: number }[],
+	assets?: { name?: string, browser_download_url?: string, size?: number, digest?: string | null }[],
 }
 
 // only ever hand the UI links that point at our own repo
 const isOwnRepoUrl = (url: string | undefined): url is string => !!url && url.startsWith(JCODES_GITHUB_URL)
+
+const releaseOfGitHubJSON = (r: GitHubReleaseJSON): JCodesRelease => ({
+	tag: r.tag_name ?? '',
+	name: r.name || r.tag_name || '',
+	publishedAt: r.published_at ?? null,
+	notes: r.body ?? '',
+	url: isOwnRepoUrl(r.html_url) ? r.html_url : JCODES_DOWNLOADS_URL,
+	isPrerelease: !!r.prerelease,
+	assets: (r.assets ?? [])
+		.filter(a => a.name && isOwnRepoUrl(a.browser_download_url))
+		.map(a => ({
+			name: a.name ?? '',
+			url: a.browser_download_url ?? '',
+			sizeBytes: a.size ?? 0,
+			sha256: a.digest?.startsWith('sha256:') ? a.digest.slice('sha256:'.length) : null,
+		})),
+})
 
 
 
@@ -28,9 +47,12 @@ export class VoidMainUpdateService extends Disposable implements IVoidUpdateServ
 		@IProductService private readonly _productService: IProductService,
 		@IEnvironmentMainService private readonly _envMainService: IEnvironmentMainService,
 		@IUpdateService private readonly _updateService: IUpdateService,
+		@ILifecycleMainService private readonly _lifecycleMainService: ILifecycleMainService,
 	) {
 		super()
 	}
+
+	private readonly _installer = new JCodesInstaller()
 
 
 	async check(explicit: boolean): Promise<VoidCheckUpdateRespose> {
@@ -113,21 +135,50 @@ export class VoidMainUpdateService extends Disposable implements IVoidUpdateServ
 
 			return data
 				.filter(r => !r.draft && r.tag_name)
-				.map(r => ({
-					tag: r.tag_name ?? '',
-					name: r.name || r.tag_name || '',
-					publishedAt: r.published_at ?? null,
-					notes: r.body ?? '',
-					url: isOwnRepoUrl(r.html_url) ? r.html_url : JCODES_DOWNLOADS_URL,
-					isPrerelease: !!r.prerelease,
-					assets: (r.assets ?? [])
-						.filter(a => a.name && isOwnRepoUrl(a.browser_download_url))
-						.map(a => ({ name: a.name ?? '', url: a.browser_download_url ?? '', sizeBytes: a.size ?? 0 })),
-				}))
+				.map(releaseOfGitHubJSON)
 		}
 		catch (e) {
 			return null
 		}
+	}
+
+	// ---- "Update now" ----
+
+	async startUpdate(tag: string): Promise<void> {
+		if (!this._envMainService.isBuilt) return this._installer.fail(`Updating only works in the installed app, not in a development build.`)
+		if (!/^[\w.\-]{1,64}$/.test(tag)) return this._installer.fail(`That isn't a valid version.`)
+
+		// never trust the UI for what to download: look the release up again and only allow a newer version
+		const myVersion = this._productService.jcodesVersion
+		if (myVersion && !isNewerVersion(tag, myVersion)) return this._installer.fail(`You already have this version or a newer one.`)
+
+		let release: JCodesRelease
+		try {
+			const response = await fetch(JCODES_RELEASE_BY_TAG_API_URL + encodeURIComponent(tag))
+			if (!response.ok) return this._installer.fail(`Couldn't find that release on GitHub (error ${response.status}). Please try again later.`)
+			const data: GitHubReleaseJSON = await response.json()
+			release = releaseOfGitHubJSON(data)
+		}
+		catch (e) {
+			return this._installer.fail(`Couldn't reach GitHub. Check your internet connection and try again.`)
+		}
+
+		const asset = pickInstallableAsset(release.assets)
+		if (!asset) return this._installer.fail(`J Codes can't update itself on this computer yet. Please download the update from GitHub.`)
+
+		this._installer.start(tag, asset) // runs in the background - the UI watches getUpdateProgress()
+	}
+
+	async getUpdateProgress(): Promise<JCodesUpdateProgress> {
+		return this._installer.progress
+	}
+
+	async cancelUpdate(): Promise<void> {
+		await this._installer.cancel()
+	}
+
+	async restartToInstall(): Promise<void> {
+		await this._installer.restartAndInstall(() => this._lifecycleMainService.quit(true))
 	}
 
 	private async _manualCheckGHTagIfDisabled(explicit: boolean): Promise<VoidCheckUpdateRespose> {

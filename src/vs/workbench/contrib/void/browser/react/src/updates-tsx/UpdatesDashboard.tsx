@@ -1,6 +1,6 @@
 import '../styles.css'
 import React, { useCallback, useEffect, useState } from 'react'
-import { CheckCircle2, CloudDownload, Download, ExternalLink, Loader2, RefreshCw, TriangleAlert } from 'lucide-react'
+import { CheckCircle2, CloudDownload, Download, ExternalLink, Loader2, RefreshCw, RotateCw, TriangleAlert, X } from 'lucide-react'
 import ErrorBoundary from '../sidebar-tsx/ErrorBoundary.js'
 import { useAccessor, useIsDark } from '../util/services.js'
 import { URI } from '../../../../../../../base/common/uri.js'
@@ -61,8 +61,11 @@ const useUpdates = () => {
 
 	const refresh = useCallback(() => { updatesService.refresh() }, [updatesService])
 	const open = useCallback((url: string) => { openerService.open(URI.parse(url)) }, [openerService])
+	const startInstall = useCallback(() => { updatesService.startInstall() }, [updatesService])
+	const cancelInstall = useCallback(() => { updatesService.cancelInstall() }, [updatesService])
+	const restartToUpdate = useCallback(() => { updatesService.restartToUpdate() }, [updatesService])
 
-	return { state, refresh, open }
+	return { state, refresh, open, startInstall, cancelInstall, restartToUpdate }
 }
 
 // ============================================================================
@@ -88,10 +91,44 @@ const VersionRow = ({ label, value }: { label: string, value: React.ReactNode })
 	</div>
 )
 
+// shows the progress of "Update now" and the button for the next step
+const InstallPanel = () => {
+	const { state, open, cancelInstall, restartToUpdate } = useUpdates()
+	const { phase, receivedBytes, totalBytes, error, tag } = state.install
+	if (phase === 'idle') return null
+
+	const percent = totalBytes > 0 ? Math.min(100, Math.round((receivedBytes / totalBytes) * 100)) : 0
+
+	return <div className='mt-4 pt-4 border-t border-void-border-2'>
+		{(phase === 'downloading' || phase === 'preparing') && <>
+			<div className='flex items-center justify-between gap-3 text-xs text-void-fg-2'>
+				<span>{phase === 'downloading' ? `Downloading ${tag}… ${fmtSize(receivedBytes)} of ${fmtSize(totalBytes)}` : `Checking and preparing ${tag}…`}</span>
+				<button onClick={cancelInstall} className='flex items-center gap-1 text-[11px] text-void-fg-3 hover:text-void-fg-1 transition-colors'><X className='size-3' />Cancel</button>
+			</div>
+			<div className='h-1.5 rounded-full bg-void-bg-2 mt-2 overflow-hidden'>
+				<div className='h-full bg-blue-500 transition-all' style={{ width: `${phase === 'preparing' ? 100 : percent}%` }} />
+			</div>
+		</>}
+
+		{phase === 'ready' && <div className='flex items-center justify-between gap-3 flex-wrap'>
+			<span className='flex items-center gap-1.5 text-xs text-void-fg-2'><CheckCircle2 className='size-3.5 text-green-500' />{tag} is downloaded and verified. Restart J Codes to finish updating.</span>
+			<button onClick={restartToUpdate} className='flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-void-fg-1 text-void-bg-1 hover:opacity-90 transition-opacity'><RotateCw className='size-3.5' />Restart to update</button>
+		</div>}
+
+		{phase === 'installing' && <span className='flex items-center gap-1.5 text-xs text-void-fg-2'><Loader2 className='size-3.5 animate-spin' />Installing {tag} - J Codes will reopen in a moment…</span>}
+
+		{phase === 'error' && <div className='flex items-start justify-between gap-3 flex-wrap'>
+			<span className='flex items-start gap-1.5 text-xs text-void-fg-2'><TriangleAlert className='size-3.5 text-amber-500 mt-0.5 shrink-0' />{error}</span>
+			<button onClick={() => open(JCODES_DOWNLOADS_URL)} className='flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-void-border-2 text-void-fg-2 hover:text-void-fg-1 hover:bg-void-bg-2 transition-colors shrink-0'><Download className='size-3.5' />Download manually</button>
+		</div>}
+	</div>
+}
+
 const StatusCard = () => {
-	const { state, refresh, open } = useUpdates()
-	const { status, currentVersion, latest, updateAvailable, checkedAt } = state
+	const { state, refresh, open, startInstall } = useUpdates()
+	const { status, currentVersion, latest, updateAvailable, checkedAt, install } = state
 	const isChecking = status === 'checking'
+	const isInstalling = install.phase !== 'idle' && install.phase !== 'error'
 
 	const badge = isChecking ? <Badge tone='info'><Loader2 className='size-3 animate-spin' />Checking…</Badge>
 		: status === 'error' ? <Badge tone='danger'><TriangleAlert className='size-3' />Couldn't check</Badge>
@@ -111,12 +148,26 @@ const StatusCard = () => {
 		{status === 'error' && <div className='text-xs text-void-fg-3 mt-3'>Couldn't reach GitHub. Check your internet connection and try again.</div>}
 
 		<div className='flex items-center gap-2 mt-4 flex-wrap'>
-			<button
+			{updateAvailable
+				? <button
+					onClick={startInstall}
+					disabled={isInstalling}
+					className='flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-void-fg-1 text-void-bg-1 hover:opacity-90 disabled:opacity-50 transition-opacity'
+				>
+					<Download className='size-3.5' />Update now
+				</button>
+				: <button
+					onClick={() => open(JCODES_DOWNLOADS_URL)}
+					className='flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-void-fg-1 text-void-bg-1 hover:opacity-90 transition-opacity'
+				>
+					<Download className='size-3.5' />Download latest
+				</button>}
+			{updateAvailable && <button
 				onClick={() => open(JCODES_DOWNLOADS_URL)}
-				className='flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md bg-void-fg-1 text-void-bg-1 hover:opacity-90 transition-opacity'
+				className='flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-void-border-2 text-void-fg-2 hover:text-void-fg-1 hover:bg-void-bg-2 transition-colors'
 			>
-				<Download className='size-3.5' />Download latest
-			</button>
+				<ExternalLink className='size-3.5' />Download manually
+			</button>}
 			<button
 				onClick={refresh}
 				disabled={isChecking}
@@ -132,6 +183,8 @@ const StatusCard = () => {
 			</button>
 			{checkedAt && <span className='text-[11px] text-void-fg-4 ml-auto'>Checked {relativeTime(checkedAt)}</span>}
 		</div>
+
+		<InstallPanel />
 	</Card>
 }
 

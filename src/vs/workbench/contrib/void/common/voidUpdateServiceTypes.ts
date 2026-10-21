@@ -2,12 +2,25 @@ export const JCODES_GITHUB_URL = 'https://github.com/jagantripuragiri/Jcodes-AI-
 export const JCODES_DOWNLOADS_URL = `${JCODES_GITHUB_URL}/releases/latest`
 export const JCODES_LATEST_RELEASE_API_URL = 'https://api.github.com/repos/jagantripuragiri/Jcodes-AI-Ide/releases/latest'
 export const JCODES_RECENT_RELEASES_API_URL = 'https://api.github.com/repos/jagantripuragiri/Jcodes-AI-Ide/releases?per_page=5'
+export const JCODES_RELEASE_BY_TAG_API_URL = 'https://api.github.com/repos/jagantripuragiri/Jcodes-AI-Ide/releases/tags/'
 
 export type JCodesReleaseAsset = {
 	name: string,
 	url: string,
 	sizeBytes: number,
+	sha256: string | null, // GitHub's checksum of the file, used to verify downloads
 }
+
+// progress of "Update now" (download -> verify -> ready to restart), kept in the main process and polled by the UI
+export type JCodesUpdateProgress = {
+	phase: 'idle' | 'downloading' | 'preparing' | 'ready' | 'installing' | 'error',
+	tag: string | null,
+	receivedBytes: number,
+	totalBytes: number,
+	error: string | null, // a human-readable reason when phase is 'error'
+}
+
+export const IDLE_JCODES_UPDATE_PROGRESS: JCodesUpdateProgress = { phase: 'idle', tag: null, receivedBytes: 0, totalBytes: 0, error: null }
 
 export type JCodesRelease = {
 	tag: string,

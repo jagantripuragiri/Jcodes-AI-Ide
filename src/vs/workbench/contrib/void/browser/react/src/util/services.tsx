@@ -54,6 +54,7 @@ import { IEditorService } from '../../../../../../services/editor/common/editorS
 import { IProjectBrainService, ProjectBrainState } from '../../../projectBrain/projectBrainService.js'
 import { ProjectBrainNavigationRequest } from '../../../../common/projectBrain/projectBrainTypes.js'
 import { IGitHubAccountService, GitHubAccountsState } from '../../../voidGitHubService.js'
+import { IJCodesUpdatesService } from '../../../updates/jcodesUpdatesService.js'
 import { IDialogService } from '../../../../../../../platform/dialogs/common/dialogs.js'
 import { IOpenerService } from '../../../../../../../platform/opener/common/opener.js'
 
@@ -274,6 +275,7 @@ const getReactAccessor = (accessor: ServicesAccessor) => {
 		IEditorService: accessor.get(IEditorService),
 		IProjectBrainService: accessor.get(IProjectBrainService),
 		IGitHubAccountService: accessor.get(IGitHubAccountService),
+		IJCodesUpdatesService: accessor.get(IJCodesUpdatesService),
 		IDialogService: accessor.get(IDialogService),
 		IOpenerService: accessor.get(IOpenerService),
 

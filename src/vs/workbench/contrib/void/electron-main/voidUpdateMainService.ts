@@ -3,20 +3,21 @@ import { IEnvironmentMainService } from '../../../../platform/environment/electr
 import { IProductService } from '../../../../platform/product/common/productService.js';
 import { IUpdateService, StateType } from '../../../../platform/update/common/update.js';
 import { IVoidUpdateService } from '../common/voidUpdateService.js';
-import { JCODES_LATEST_RELEASE_API_URL, VoidCheckUpdateRespose } from '../common/voidUpdateServiceTypes.js';
+import { isNewerVersion, JCODES_DOWNLOADS_URL, JCODES_GITHUB_URL, JCODES_LATEST_RELEASE_API_URL, JCODES_RECENT_RELEASES_API_URL, JCodesRelease, VoidCheckUpdateRespose } from '../common/voidUpdateServiceTypes.js';
 
-
-// compares dotted numeric versions, ignoring a leading 'v' (so 'v1.10' is newer than '1.6')
-const isNewerVersion = (latest: string, current: string): boolean => {
-	const partsOf = (v: string) => v.replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0)
-	const latestParts = partsOf(latest)
-	const currentParts = partsOf(current)
-	for (let i = 0; i < Math.max(latestParts.length, currentParts.length); i++) {
-		const diff = (latestParts[i] ?? 0) - (currentParts[i] ?? 0)
-		if (diff !== 0) return diff > 0
-	}
-	return false
+type GitHubReleaseJSON = {
+	tag_name?: string,
+	name?: string | null,
+	published_at?: string | null,
+	body?: string | null,
+	html_url?: string,
+	draft?: boolean,
+	prerelease?: boolean,
+	assets?: { name?: string, browser_download_url?: string, size?: number }[],
 }
+
+// only ever hand the UI links that point at our own repo
+const isOwnRepoUrl = (url: string | undefined): url is string => !!url && url.startsWith(JCODES_GITHUB_URL)
 
 
 
@@ -100,6 +101,34 @@ export class VoidMainUpdateService extends Disposable implements IVoidUpdateServ
 
 
 
+
+	// the latest few GitHub releases (newest first), for the Updates window. Returns null if they couldn't be fetched
+	async getRecentReleases(): Promise<JCodesRelease[] | null> {
+		try {
+			const response = await fetch(JCODES_RECENT_RELEASES_API_URL)
+			if (!response.ok) return null
+
+			const data: GitHubReleaseJSON[] = await response.json()
+			if (!Array.isArray(data)) return null
+
+			return data
+				.filter(r => !r.draft && r.tag_name)
+				.map(r => ({
+					tag: r.tag_name ?? '',
+					name: r.name || r.tag_name || '',
+					publishedAt: r.published_at ?? null,
+					notes: r.body ?? '',
+					url: isOwnRepoUrl(r.html_url) ? r.html_url : JCODES_DOWNLOADS_URL,
+					isPrerelease: !!r.prerelease,
+					assets: (r.assets ?? [])
+						.filter(a => a.name && isOwnRepoUrl(a.browser_download_url))
+						.map(a => ({ name: a.name ?? '', url: a.browser_download_url ?? '', sizeBytes: a.size ?? 0 })),
+				}))
+		}
+		catch (e) {
+			return null
+		}
+	}
 
 	private async _manualCheckGHTagIfDisabled(explicit: boolean): Promise<VoidCheckUpdateRespose> {
 		try {

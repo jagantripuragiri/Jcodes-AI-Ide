@@ -12,6 +12,7 @@ export default defineConfig({
 		'./src2/project-brain-tsx/index.tsx',
 		'./src2/token-usage-tsx/index.tsx',
 		'./src2/github-accounts-tsx/index.tsx',
+		'./src2/updates-tsx/index.tsx',
 	],
 	outDir: './out',
 	format: ['esm'],

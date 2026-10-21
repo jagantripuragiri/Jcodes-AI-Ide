@@ -70,6 +70,11 @@ import './projectBrain/projectBrainService.js'
 import './projectBrain/projectBrainPane.js'
 import './projectBrain/projectBrainActions.js'
 
+// register J Codes Updates (release check service + standalone Updates tab/commands + status-bar badge)
+import './updates/jcodesUpdatesService.js'
+import './updates/updatesPane.js'
+import './updates/updatesActions.js'
+import './updates/updatesStatusBar.js'
 // register GitHub Account Manager (gh CLI orchestration service + standalone dashboard tab/commands)
 import './voidGitHubService.js'
 import './github/githubAccountsPane.js'

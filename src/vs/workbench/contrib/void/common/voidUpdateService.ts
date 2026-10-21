@@ -2,13 +2,14 @@ import { ProxyChannel } from '../../../../base/parts/ipc/common/ipc.js';
 import { registerSingleton, InstantiationType } from '../../../../platform/instantiation/common/extensions.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { IMainProcessService } from '../../../../platform/ipc/common/mainProcessService.js';
-import { VoidCheckUpdateRespose } from './voidUpdateServiceTypes.js';
+import { JCodesRelease, VoidCheckUpdateRespose } from './voidUpdateServiceTypes.js';
 
 
 
 export interface IVoidUpdateService {
 	readonly _serviceBrand: undefined;
 	check: (explicit: boolean) => Promise<VoidCheckUpdateRespose>;
+	getRecentReleases: () => Promise<JCodesRelease[] | null>;
 }
 
 
@@ -32,6 +33,11 @@ export class VoidUpdateService implements IVoidUpdateService {
 	// anything transmitted over a channel must be async even if it looks like it doesn't have to be
 	check: IVoidUpdateService['check'] = async (explicit) => {
 		const res = await this.voidUpdateService.check(explicit)
+		return res
+	}
+
+	getRecentReleases: IVoidUpdateService['getRecentReleases'] = async () => {
+		const res = await this.voidUpdateService.getRecentReleases()
 		return res
 	}
 }

@@ -48,4 +48,4 @@ class MetricsPollService extends Disposable implements IMetricsPollService {
 
 }
 
-registerWorkbenchContribution2(MetricsPollService.ID, MetricsPollService, WorkbenchPhase.BlockRestore);
+registerWorkbenchContribution2(MetricsPollService.ID, MetricsPollService, WorkbenchPhase.Eventually);

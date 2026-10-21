@@ -12,6 +12,7 @@ export default defineConfig({
 		'./src2/project-brain-tsx/index.tsx',
 		'./src2/token-usage-tsx/index.tsx',
 		'./src2/github-accounts-tsx/index.tsx',
+		'./src2/updates-tsx/index.tsx',
 	],
 	outDir: './out',
 	format: ['esm'],
@@ -35,6 +36,10 @@ export default defineConfig({
 			.replaceAll('*', '.*'))
 	],
 	treeshake: true,
+	minify: true,
+	define: {
+		'process.env.NODE_ENV': '"production"', // use React's production build (smaller + faster)
+	},
 	esbuildOptions(options) {
 		options.outbase = 'src2'  // tries copying the folder hierarchy starting at src2
 	}

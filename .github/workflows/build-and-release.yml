@@ -35,6 +35,21 @@ jobs:
         with:
           node-version: 22
 
+      # The app decides whether an update exists by comparing the latest GitHub release tag with the version baked into
+      # product.json, so the build must carry exactly the version of the release it is published under.
+      - name: Stamp version from release tag
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.tag_name }}
+        run: |
+          VERSION="${RELEASE_TAG#v}"
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+(\.[0-9]+)*$'; then
+            echo "Release tag '$RELEASE_TAG' must look like v1.7 or v1.7.0 - refusing to build with a wrong version."
+            exit 1
+          fi
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('product.json','utf8'));p.jcodesVersion=process.argv[1];fs.writeFileSync('product.json',JSON.stringify(p,null,'\t')+'\n')" "$VERSION"
+          grep jcodesVersion product.json
+
       - name: Install Dependencies
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -78,6 +93,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      # The app decides whether an update exists by comparing the latest GitHub release tag with the version baked into
+      # product.json, so the build must carry exactly the version of the release it is published under.
+      - name: Stamp version from release tag
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.tag_name }}
+        run: |
+          VERSION="${RELEASE_TAG#v}"
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+(\.[0-9]+)*$'; then
+            echo "Release tag '$RELEASE_TAG' must look like v1.7 or v1.7.0 - refusing to build with a wrong version."
+            exit 1
+          fi
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('product.json','utf8'));p.jcodesVersion=process.argv[1];fs.writeFileSync('product.json',JSON.stringify(p,null,'\t')+'\n')" "$VERSION"
+          grep jcodesVersion product.json
 
       - name: Install Dependencies
         shell: bash
@@ -144,6 +174,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      # The app decides whether an update exists by comparing the latest GitHub release tag with the version baked into
+      # product.json, so the build must carry exactly the version of the release it is published under.
+      - name: Stamp version from release tag
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.tag_name }}
+        run: |
+          VERSION="${RELEASE_TAG#v}"
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+(\.[0-9]+)*$'; then
+            echo "Release tag '$RELEASE_TAG' must look like v1.7 or v1.7.0 - refusing to build with a wrong version."
+            exit 1
+          fi
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('product.json','utf8'));p.jcodesVersion=process.argv[1];fs.writeFileSync('product.json',JSON.stringify(p,null,'\t')+'\n')" "$VERSION"
+          grep jcodesVersion product.json
 
       - name: Install Dependencies
         env:

@@ -673,19 +673,14 @@ export class AutocompleteService extends Disposable implements IAutocompleteServ
 		// if there is a cached autocompletion, return it
 		if (cachedAutocompletion && autocompletionMatchup) {
 
-			console.log('AA')
-
-
 			// console.log('id: ' + cachedAutocompletion.id)
 
 			if (cachedAutocompletion.status === 'finished') {
-				console.log('A1')
 
 				const inlineCompletions = toInlineCompletions({ autocompletionMatchup, autocompletion: cachedAutocompletion, prefixAndSuffix, position, debug: true })
 				return inlineCompletions
 
 			} else if (cachedAutocompletion.status === 'pending') {
-				console.log('A2')
 
 				try {
 					await cachedAutocompletion.llmPromise;
@@ -697,10 +692,6 @@ export class AutocompleteService extends Disposable implements IAutocompleteServ
 					console.error('Error creating autocompletion (1): ' + e)
 				}
 
-			} else if (cachedAutocompletion.status === 'error') {
-				console.log('A3')
-			} else {
-				console.log('A4')
 			}
 
 			return []
@@ -782,7 +773,6 @@ export class AutocompleteService extends Disposable implements IAutocompleteServ
 			_newlineCount: 0,
 		}
 
-		console.log('starting autocomplete...', predictionType)
 
 		const featureName: FeatureName = 'Autocomplete'
 		const overridesOfModel = this._settingsService.state.overridesOfModel
@@ -926,7 +916,6 @@ export class AutocompleteService extends Disposable implements IAutocompleteServ
 					const matchup = removeAllWhitespace(prefix) === removeAllWhitespace(autocompletion.prefix + autocompletion.insertText)
 
 					if (matchup) {
-						console.log('ACCEPT', autocompletion.id)
 						this._lastCompletionAccept = Date.now()
 						this._autocompletionsOfDocument[docUriStr].delete(autocompletion.id);
 					}
@@ -939,6 +928,6 @@ export class AutocompleteService extends Disposable implements IAutocompleteServ
 
 }
 
-registerWorkbenchContribution2(AutocompleteService.ID, AutocompleteService, WorkbenchPhase.BlockRestore);
+registerWorkbenchContribution2(AutocompleteService.ID, AutocompleteService, WorkbenchPhase.AfterRestored);
 
 

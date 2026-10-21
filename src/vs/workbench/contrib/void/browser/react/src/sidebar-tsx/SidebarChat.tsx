@@ -125,11 +125,7 @@ export const IconLoading = ({ className = '' }: { className?: string }) => {
 
 		// Function to handle the animation
 		const toggleLoadingText = () => {
-			if (loadingText === '...') {
-				setLoadingText('.');
-			} else {
-				setLoadingText(loadingText + '.');
-			}
+			setLoadingText(prev => prev === '...' ? '.' : prev + '.');
 		};
 
 		// Start the animation loop
@@ -137,7 +133,7 @@ export const IconLoading = ({ className = '' }: { className?: string }) => {
 
 		// Cleanup function to clear the interval when component unmounts
 		return () => clearInterval(intervalId);
-	}, [loadingText, setLoadingText]);
+	}, [setLoadingText]);
 
 	return <div className={`${className}`}>{loadingText}</div>;
 

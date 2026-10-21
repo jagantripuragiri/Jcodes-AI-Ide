@@ -55,6 +55,12 @@ const REFRESH_INTERVAL = 5_000
 
 const autoOptions = { enableProviderOnSuccess: true, doNotFire: true }
 
+// cloud providers can never list models without an api key, so there is no point polling them until one is entered
+const hasNoApiKey = (settingsOfProvider: SettingsOfProvider, providerName: RefreshableProviderName) => {
+	const settings = settingsOfProvider[providerName]
+	return 'apiKey' in settings && !settings.apiKey
+}
+
 // element-wise equals
 function eq<T>(a: T[], b: T[]): boolean {
 	if (a.length !== b.length) return false
@@ -99,7 +105,8 @@ export class RefreshModelService extends Disposable implements IRefreshModelServ
 			for (const providerName of refreshableProviderNames) {
 
 				// const { '_didFillInProviderSettings': enabled } = this.voidSettingsService.state.settingsOfProvider[providerName]
-				this.startRefreshingModels(providerName, autoOptions)
+				if (!hasNoApiKey(voidSettingsService.state.settingsOfProvider, providerName))
+					this.startRefreshingModels(providerName, autoOptions)
 
 				// every time providerName.enabled changes, refresh models too, like a useEffect
 				let relevantVals = () => refreshBasedOn[providerName].map(settingName => voidSettingsService.state.settingsOfProvider[providerName][settingName])
@@ -163,7 +170,7 @@ export class RefreshModelService extends Disposable implements IRefreshModelServ
 		this._setRefreshState(providerName, 'refreshing', options)
 
 		const autoPoll = () => {
-			if (this.voidSettingsService.state.globalSettings.autoRefreshModels) {
+			if (this.voidSettingsService.state.globalSettings.autoRefreshModels && !hasNoApiKey(this.voidSettingsService.state.settingsOfProvider, providerName)) {
 				// resume auto-polling
 				const timeoutId = setTimeout(() => this.startRefreshingModels(providerName, autoOptions), REFRESH_INTERVAL)
 				this._setTimeoutId(providerName, timeoutId)

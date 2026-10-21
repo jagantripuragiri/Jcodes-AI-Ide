@@ -1,12 +1,10 @@
 // disable foreign import complaints
 /* eslint-disable */
-import Anthropic from '@anthropic-ai/sdk';
-import { Ollama } from 'ollama';
-import OpenAI, { ClientOptions, AzureOpenAI } from 'openai';
-import { MistralCore } from '@mistralai/mistralai/core.js';
-import { fimComplete } from '@mistralai/mistralai/funcs/fimComplete.js';
-import { Tool as GeminiTool, FunctionDeclaration, GoogleGenAI, ThinkingConfig, Schema, Type } from '@google/genai';
-import { GoogleAuth } from 'google-auth-library'
+// the SDKs below are heavy, so only their types are imported here - each one is loaded on first use with a dynamic import()
+import type Anthropic from '@anthropic-ai/sdk';
+import type OpenAI from 'openai';
+import type { ClientOptions, AzureOpenAI } from 'openai';
+import type { Tool as GeminiTool, FunctionDeclaration, ThinkingConfig, Schema, Type } from '@google/genai';
 /* eslint-enable */
 
 import { AnthropicLLMChatMessage, GeminiLLMChatMessage, GeminiModelResponse, LLMChatMessage, LLMFIMMessage, ModelListParams, OllamaModelResponse, OnError, OnFinalMessage, OnText, RawToolCallObj, RawToolParamsObj } from '../../common/sendLLMMessageTypes.js';
@@ -19,6 +17,7 @@ import { generateUuid } from '../../../../../base/common/uuid.js';
 
 const getGoogleApiKey = async () => {
 	// module‑level singleton
+	const { GoogleAuth } = await import('google-auth-library')
 	const auth = new GoogleAuth({ scopes: `https://www.googleapis.com/auth/cloud-platform` });
 	const key = await auth.getAccessToken()
 	if (!key) throw new Error(`Google API failed to generate a key.`)
@@ -66,6 +65,7 @@ const parseHeadersJSON = (s: string | undefined): Record<string, string | null |
 }
 
 const newOpenAICompatibleSDK = async ({ settingsOfProvider, providerName, includeInPayload }: { settingsOfProvider: SettingsOfProvider, providerName: ProviderName, includeInPayload?: { [s: string]: any } }) => {
+	const { default: OpenAI, AzureOpenAI } = await import('openai')
 	const commonPayloadOpts: ClientOptions = {
 		dangerouslyAllowBrowser: true,
 		...includeInPayload,
@@ -197,7 +197,8 @@ const _sendOpenAICompatibleFIM = async ({ messages: { prefix, suffix, stopTokens
 			const fullText = response.choices[0]?.text
 			onFinalMessage({ fullText, fullReasoning: '', anthropicReasoning: null, usage: null });
 		})
-		.catch(error => {
+		.catch(async error => {
+			const { default: OpenAI } = await import('openai')
 			if (error instanceof OpenAI.APIError && error.status === 401) { onError({ message: invalidApiKeyMessage(providerName), fullError: error }); }
 			else { onError({ message: error + '', fullError: error }); }
 		})
@@ -385,7 +386,8 @@ const _sendOpenAICompatibleChat = async ({ messages, onText, onFinalMessage, onE
 			}
 		})
 		// when error/fail - this catches errors of both .create() and .then(for await)
-		.catch(error => {
+		.catch(async error => {
+			const { default: OpenAI } = await import('openai')
 			if (error instanceof OpenAI.APIError && error.status === 401) { onError({ message: invalidApiKeyMessage(providerName), fullError: error }); }
 			else { onError({ message: error + '', fullError: error }); }
 		})
@@ -483,6 +485,7 @@ const sendAnthropicChat = async ({ messages, providerName, onText, onFinalMessag
 
 
 	// instance
+	const { default: Anthropic } = await import('@anthropic-ai/sdk')
 	const anthropic = new Anthropic({
 		apiKey: thisConfig.apiKey,
 		dangerouslyAllowBrowser: true
@@ -587,7 +590,7 @@ const sendAnthropicChat = async ({ messages, providerName, onText, onFinalMessag
 
 // ------------ MISTRAL ------------
 // https://docs.mistral.ai/api/#tag/fim
-const sendMistralFIM = ({ messages, onFinalMessage, onError, settingsOfProvider, overridesOfModel, modelName: modelName_, _setAborter, providerName }: SendFIMParams_Internal) => {
+const sendMistralFIM = async ({ messages, onFinalMessage, onError, settingsOfProvider, overridesOfModel, modelName: modelName_, _setAborter, providerName }: SendFIMParams_Internal) => {
 	const { modelName, supportsFIM } = getModelCapabilities(providerName, modelName_, overridesOfModel)
 	if (!supportsFIM) {
 		if (modelName === modelName_)
@@ -597,6 +600,8 @@ const sendMistralFIM = ({ messages, onFinalMessage, onError, settingsOfProvider,
 		return
 	}
 
+	const { MistralCore } = await import('@mistralai/mistralai/core.js')
+	const { fimComplete } = await import('@mistralai/mistralai/funcs/fimComplete.js')
 	const mistral = new MistralCore({ apiKey: settingsOfProvider.mistral.apiKey })
 	fimComplete(mistral,
 		{
@@ -623,9 +628,10 @@ const sendMistralFIM = ({ messages, onFinalMessage, onError, settingsOfProvider,
 
 
 // ------------ OLLAMA ------------
-const newOllamaSDK = ({ endpoint }: { endpoint: string }) => {
+const newOllamaSDK = async ({ endpoint }: { endpoint: string }) => {
 	// if endpoint is empty, normally ollama will send to 11434, but we want it to fail - the user should type it in
 	if (!endpoint) throw new Error(`Ollama Endpoint was empty (please enter ${defaultProviderSettings.ollama.endpoint} in Void if you want the default url).`)
+	const { Ollama } = await import('ollama')
 	const ollama = new Ollama({ host: endpoint })
 	return ollama
 }
@@ -639,7 +645,7 @@ const ollamaList = async ({ onSuccess: onSuccess_, onError: onError_, settingsOf
 	}
 	try {
 		const thisConfig = settingsOfProvider.ollama
-		const ollama = newOllamaSDK({ endpoint: thisConfig.endpoint })
+		const ollama = await newOllamaSDK({ endpoint: thisConfig.endpoint })
 		ollama.list()
 			.then((response) => {
 				const { models } = response
@@ -654,9 +660,9 @@ const ollamaList = async ({ onSuccess: onSuccess_, onError: onError_, settingsOf
 	}
 }
 
-const sendOllamaFIM = ({ messages, onFinalMessage, onError, settingsOfProvider, modelName, _setAborter }: SendFIMParams_Internal) => {
+const sendOllamaFIM = async ({ messages, onFinalMessage, onError, settingsOfProvider, modelName, _setAborter }: SendFIMParams_Internal) => {
 	const thisConfig = settingsOfProvider.ollama
-	const ollama = newOllamaSDK({ endpoint: thisConfig.endpoint })
+	const ollama = await newOllamaSDK({ endpoint: thisConfig.endpoint })
 
 	let fullText = ''
 	ollama.generate({
@@ -687,7 +693,8 @@ const sendOllamaFIM = ({ messages, onFinalMessage, onError, settingsOfProvider, 
 
 // ---------------- GEMINI NATIVE IMPLEMENTATION ----------------
 
-const toGeminiFunctionDecl = (toolInfo: InternalToolInfo) => {
+type GeminiTypeEnum = typeof Type
+const toGeminiFunctionDecl = (toolInfo: InternalToolInfo, Type: GeminiTypeEnum) => {
 	const { name, description, params } = toolInfo
 	return {
 		name,
@@ -705,12 +712,12 @@ const toGeminiFunctionDecl = (toolInfo: InternalToolInfo) => {
 	} satisfies FunctionDeclaration
 }
 
-const geminiTools = (chatMode: ChatMode | null, mcpTools: InternalToolInfo[] | undefined): GeminiTool[] | null => {
+const geminiTools = (chatMode: ChatMode | null, mcpTools: InternalToolInfo[] | undefined, Type: GeminiTypeEnum): GeminiTool[] | null => {
 	const allowedTools = availableTools(chatMode, mcpTools)
 	if (!allowedTools || Object.keys(allowedTools).length === 0) return null
 	const functionDecls: FunctionDeclaration[] = []
 	for (const t in allowedTools ?? {}) {
-		functionDecls.push(toGeminiFunctionDecl(allowedTools[t]))
+		functionDecls.push(toGeminiFunctionDecl(allowedTools[t], Type))
 	}
 	const tools: GeminiTool = { functionDeclarations: functionDecls, }
 	return [tools]
@@ -757,8 +764,10 @@ const sendGeminiChat = async ({
 			{ thinkingBudget: reasoningInfo.reasoningBudget }
 			: undefined
 
+	const { GoogleGenAI, Type } = await import('@google/genai')
+
 	// tools
-	const potentialTools = geminiTools(chatMode, mcpTools)
+	const potentialTools = geminiTools(chatMode, mcpTools, Type)
 	const toolConfig = potentialTools && specialToolFormat === 'gemini-style' ?
 		potentialTools
 		: undefined
@@ -864,6 +873,7 @@ const _geminiList = async ({ onSuccess: onSuccess_, onError: onError_, settingsO
 	}
 	try {
 		const thisConfig = settingsOfProvider.gemini
+		const { GoogleGenAI } = await import('@google/genai')
 		const genAI = new GoogleGenAI({ apiKey: thisConfig.apiKey });
 		const models: GeminiModelResponse[] = []
 		const pager = await genAI.models.list()

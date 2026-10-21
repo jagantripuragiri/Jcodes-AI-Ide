@@ -53,7 +53,7 @@ jobs:
       - name: Create macOS arm64 ZIP
         run: |
           cd ../VSCode-darwin-arm64
-          zip -r -y -X "${{ github.workspace }}/J-Codes-darwin-arm64.zip" "J code's.app"
+          zip -r -y -X "${{ github.workspace }}/J-Codes-darwin-arm64.zip" "J Codes.app"
 
       - name: Upload macOS arm64 Artifact
         uses: actions/upload-artifact@v4
@@ -101,7 +101,7 @@ jobs:
           node -e "
           const rcedit = require('rcedit');
           const path = require('path');
-          const exe = path.resolve('..', 'VSCode-win32-x64', \"J code's.exe\");
+          const exe = path.resolve('..', 'VSCode-win32-x64', \"J Codes.exe\");
           rcedit(exe, { icon: path.resolve('resources/win32/code.ico') }, err => {
             if (err) { console.error(err); process.exit(1); }
             console.log('Icon applied to', exe);

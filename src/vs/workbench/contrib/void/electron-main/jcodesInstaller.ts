@@ -47,6 +47,9 @@ if mv "$TARGET" "$BACKUP"; then
 	fi
 fi
 open "$TARGET"
+
+# the downloaded zip (and this script) are no longer needed
+rm -rf "$(dirname "$0")"
 `
 
 export class JCodesInstaller {

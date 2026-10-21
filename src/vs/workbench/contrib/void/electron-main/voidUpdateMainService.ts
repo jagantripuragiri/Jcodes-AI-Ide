@@ -3,7 +3,20 @@ import { IEnvironmentMainService } from '../../../../platform/environment/electr
 import { IProductService } from '../../../../platform/product/common/productService.js';
 import { IUpdateService, StateType } from '../../../../platform/update/common/update.js';
 import { IVoidUpdateService } from '../common/voidUpdateService.js';
-import { VoidCheckUpdateRespose } from '../common/voidUpdateServiceTypes.js';
+import { JCODES_LATEST_RELEASE_API_URL, VoidCheckUpdateRespose } from '../common/voidUpdateServiceTypes.js';
+
+
+// compares dotted numeric versions, ignoring a leading 'v' (so 'v1.10' is newer than '1.6')
+const isNewerVersion = (latest: string, current: string): boolean => {
+	const partsOf = (v: string) => v.replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0)
+	const latestParts = partsOf(latest)
+	const currentParts = partsOf(current)
+	for (let i = 0; i < Math.max(latestParts.length, currentParts.length); i++) {
+		const diff = (latestParts[i] ?? 0) - (currentParts[i] ?? 0)
+		if (diff !== 0) return diff > 0
+	}
+	return false
+}
 
 
 
@@ -74,7 +87,7 @@ export class VoidMainUpdateService extends Disposable implements IVoidUpdateServ
 
 		if (this._updateService.state.type === StateType.Ready) {
 			// Update is ready
-			return { message: 'Restart Void to update!', action: 'restart' } as const
+			return { message: 'Restart J Codes to update!', action: 'restart' } as const
 		}
 
 		if (this._updateService.state.type === StateType.Disabled) {
@@ -90,15 +103,16 @@ export class VoidMainUpdateService extends Disposable implements IVoidUpdateServ
 
 	private async _manualCheckGHTagIfDisabled(explicit: boolean): Promise<VoidCheckUpdateRespose> {
 		try {
-			const response = await fetch('https://api.github.com/repos/voideditor/binaries/releases/latest');
+			const response = await fetch(JCODES_LATEST_RELEASE_API_URL);
 
 			const data = await response.json();
 			const version = data.tag_name;
 
-			const myVersion = this._productService.version
+			const myVersion = this._productService.jcodesVersion
 			const latestVersion = version
 
-			const isUpToDate = myVersion === latestVersion // only makes sense if response.ok
+			// if we can't tell what the versions are, don't nag the user (only makes sense if response.ok)
+			const isUpToDate = !myVersion || typeof latestVersion !== 'string' || !isNewerVersion(latestVersion, myVersion)
 
 			let message: string | null
 			let action: 'reinstall' | undefined
@@ -107,11 +121,11 @@ export class VoidMainUpdateService extends Disposable implements IVoidUpdateServ
 			if (explicit) {
 				if (response.ok) {
 					if (!isUpToDate) {
-						message = 'A new version of Void is available! Please reinstall (auto-updates are disabled on this OS) - it only takes a second!'
+						message = 'A new version of J Codes is available! Please reinstall (auto-updates are disabled on this OS) - it only takes a second!'
 						action = 'reinstall'
 					}
 					else {
-						message = 'Void is up-to-date!'
+						message = 'J Codes is up-to-date!'
 					}
 				}
 				else {
@@ -122,7 +136,7 @@ export class VoidMainUpdateService extends Disposable implements IVoidUpdateServ
 			// not explicit
 			else {
 				if (response.ok && !isUpToDate) {
-					message = 'A new version of Void is available! Please reinstall (auto-updates are disabled on this OS) - it only takes a second!'
+					message = 'A new version of J Codes is available! Please reinstall (auto-updates are disabled on this OS) - it only takes a second!'
 					action = 'reinstall'
 				}
 				else {

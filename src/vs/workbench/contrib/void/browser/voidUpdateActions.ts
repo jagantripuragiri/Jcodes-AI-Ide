@@ -9,14 +9,14 @@ import { IVoidUpdateService } from '../common/voidUpdateService.js';
 import { IWorkbenchContribution, registerWorkbenchContribution2, WorkbenchPhase } from '../../../common/contributions.js';
 import * as dom from '../../../../base/browser/dom.js';
 import { IUpdateService } from '../../../../platform/update/common/update.js';
-import { VoidCheckUpdateRespose } from '../common/voidUpdateServiceTypes.js';
+import { JCODES_DOWNLOADS_URL, JCODES_GITHUB_URL, VoidCheckUpdateRespose } from '../common/voidUpdateServiceTypes.js';
 import { IAction } from '../../../../base/common/actions.js';
 
 
 
 
 const notifyUpdate = (res: VoidCheckUpdateRespose & { message: string }, notifService: INotificationService, updateService: IUpdateService): INotificationHandle => {
-	const message = res?.message || 'This is a very old version of Void, please download the latest version! [Void Editor](https://voideditor.com/download-beta)!'
+	const message = res?.message || `This is a very old version of J Codes, please download the latest version! [J Codes](${JCODES_DOWNLOADS_URL})!`
 
 	let actions: INotificationActions | undefined
 
@@ -32,7 +32,7 @@ const notifyUpdate = (res: VoidCheckUpdateRespose & { message: string }, notifSe
 				class: undefined,
 				run: () => {
 					const { window } = dom.getActiveWindow()
-					window.open('https://voideditor.com/download-beta')
+					window.open(JCODES_DOWNLOADS_URL)
 				}
 			})
 		}
@@ -80,12 +80,12 @@ const notifyUpdate = (res: VoidCheckUpdateRespose & { message: string }, notifSe
 		primary.push({
 			id: 'void.updater.site',
 			enabled: true,
-			label: `Void Site`,
+			label: `J Codes GitHub`,
 			tooltip: '',
 			class: undefined,
 			run: () => {
 				const { window } = dom.getActiveWindow()
-				window.open('https://voideditor.com/')
+				window.open(JCODES_GITHUB_URL)
 			}
 		})
 
@@ -122,7 +122,7 @@ const notifyUpdate = (res: VoidCheckUpdateRespose & { message: string }, notifSe
 	// })
 }
 const notifyErrChecking = (notifService: INotificationService): INotificationHandle => {
-	const message = `Void Error: There was an error checking for updates. If this persists, please get in touch or reinstall Void [here](https://voideditor.com/download-beta)!`
+	const message = `J Codes Error: There was an error checking for updates. If this persists, please get in touch or reinstall J Codes [here](${JCODES_DOWNLOADS_URL})!`
 	const notifController = notifService.notify({
 		severity: Severity.Info,
 		message: message,

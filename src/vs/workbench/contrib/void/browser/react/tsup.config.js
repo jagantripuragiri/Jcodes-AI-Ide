@@ -35,6 +35,10 @@ export default defineConfig({
 			.replaceAll('*', '.*'))
 	],
 	treeshake: true,
+	minify: true,
+	define: {
+		'process.env.NODE_ENV': '"production"', // use React's production build (smaller + faster)
+	},
 	esbuildOptions(options) {
 		options.outbase = 'src2'  // tries copying the folder hierarchy starting at src2
 	}

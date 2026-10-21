@@ -220,4 +220,4 @@ class VoidUpdateWorkbenchContribution extends Disposable implements IWorkbenchCo
 
 	}
 }
-registerWorkbenchContribution2(VoidUpdateWorkbenchContribution.ID, VoidUpdateWorkbenchContribution, WorkbenchPhase.BlockRestore);
+registerWorkbenchContribution2(VoidUpdateWorkbenchContribution.ID, VoidUpdateWorkbenchContribution, WorkbenchPhase.Eventually);

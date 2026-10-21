@@ -4,13 +4,11 @@
 
 import { IServerChannel } from '../../../../base/parts/ipc/common/ipc.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+// the MCP SDK is only imported as types here - the runtime classes are loaded on first use in _createClientUnsafe
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { MCPConfigFileJSON, MCPConfigFileEntryJSON, MCPServer, RawMCPToolCall, MCPToolErrorResponse, MCPServerEventResponse, MCPToolCallParams, removeMCPToolNamePrefix } from '../common/mcpServiceTypes.js';
-import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { MCPUserStateOfName } from '../common/voidSettingsTypes.js';
 
 const getClientConfig = (serverName: string) => {
@@ -157,6 +155,11 @@ export class MCPChannel implements IServerChannel {
 	}
 
 	private async _createClientUnsafe(server: MCPConfigFileEntryJSON, serverName: string, isOn: boolean): Promise<ClientInfo> {
+
+		const { Client } = await import('@modelcontextprotocol/sdk/client/index.js')
+		const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js')
+		const { StreamableHTTPClientTransport } = await import('@modelcontextprotocol/sdk/client/streamableHttp.js')
+		const { SSEClientTransport } = await import('@modelcontextprotocol/sdk/client/sse.js')
 
 		const clientConfig = getClientConfig(serverName)
 		const client = new Client(clientConfig)

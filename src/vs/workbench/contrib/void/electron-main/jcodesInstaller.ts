@@ -2,7 +2,8 @@
 // GitHub's SHA-256, and installs it when the user clicks "Restart to update":
 //  - macOS:   unzips the new app next to the installed one, then a small script waits for J Codes to quit, swaps the two
 //             and reopens it (the old app is kept as a backup until the swap worked, and put back if it didn't)
-//  - Windows: runs the release's own installer silently (it closes J Codes, upgrades it in place and starts it again)
+//  - Windows: a small script waits for J Codes to quit, then runs the release's own installer silently (it upgrades J Codes
+//             in place and starts it again)
 //  - others:  not supported, the UI sends people to the downloads page instead
 
 import * as fs from 'fs';
@@ -50,6 +51,20 @@ open "$TARGET"
 
 # the downloaded zip (and this script) are no longer needed
 rm -rf "$(dirname "$0")"
+`
+
+// -ProcessId = pid of the running J Codes, -Installer = the downloaded setup .exe
+// (the installer refuses to run while J Codes is still open, so it has to wait for it to quit first)
+const WINDOWS_INSTALL_SCRIPT = `param([int]$ProcessId, [string]$Installer)
+
+# wait (up to 60s) for J Codes to quit
+try { Wait-Process -Id $ProcessId -Timeout 60 -ErrorAction Stop } catch { }
+if (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue) { exit 1 }
+
+Start-Process -FilePath $Installer -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CLOSEAPPLICATIONS' -Wait
+
+# the downloaded installer (and this script) are no longer needed
+Remove-Item -LiteralPath (Split-Path -Parent $MyInvocation.MyCommand.Path) -Recurse -Force -ErrorAction SilentlyContinue
 `
 
 export class JCodesInstaller {
@@ -120,7 +135,9 @@ export class JCodesInstaller {
 		try {
 			let child: ChildProcess
 			if ('installer' in prepared) {
-				child = spawn(prepared.installer, ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CLOSEAPPLICATIONS'], { detached: true, stdio: 'ignore' })
+				const scriptPath = path.join(this._workDir, 'install.ps1')
+				await fs.promises.writeFile(scriptPath, WINDOWS_INSTALL_SCRIPT)
+				child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', scriptPath, '-ProcessId', String(process.pid), '-Installer', prepared.installer], { detached: true, stdio: 'ignore', windowsHide: true })
 			} else {
 				const scriptPath = path.join(this._workDir, 'install.sh')
 				await fs.promises.writeFile(scriptPath, MAC_SWAP_SCRIPT, { mode: 0o755 })

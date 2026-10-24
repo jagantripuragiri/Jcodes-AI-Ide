@@ -65,6 +65,9 @@ jobs:
       - name: Create macOS arm64 ZIP
         run: |
           cd ../VSCode-darwin-arm64
+          # The Electron template is unpacked with its archive's 1980 (ZIP epoch) timestamps, which Finder then shows as
+          # the app's "Date Modified". Stamp the build time on the bundle so the installed app shows when it was built.
+          find "J Codes.app" -exec touch -h {} +
           zip -r -y -X "${{ github.workspace }}/J-Codes-darwin-arm64.zip" "J Codes.app"
 
       - name: Upload macOS arm64 Artifact

@@ -54,10 +54,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           npm_config_github_token: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          export ELECTRON_SKIP_BINARY_DOWNLOAD=1
-          export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-          npm install
+        run: bash .github/scripts/install-deps.sh
 
       - name: Build React Components
         run: npm run buildreact
@@ -114,10 +111,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           npm_config_github_token: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          export ELECTRON_SKIP_BINARY_DOWNLOAD=1
-          export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-          npm install
+        run: bash .github/scripts/install-deps.sh
 
       - name: Build React Components
         run: npm run buildreact
@@ -195,11 +189,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           npm_config_github_token: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          export ELECTRON_SKIP_BINARY_DOWNLOAD=1
-          export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
           # npm 10.9.9 silently exits 1 while installing git deps (extensions/open-remote-ssh); 10.9.8 is the last known good
           npm install -g npm@10.9.8
-          npm install
+          bash .github/scripts/install-deps.sh
 
       - name: Build React Components
         run: npm run buildreact

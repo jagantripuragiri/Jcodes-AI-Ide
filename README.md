@@ -42,18 +42,21 @@ Download the latest version of **J Code's** for your operating system:
 <img width="466.5" height="292" alt="image" src="https://github.com/user-attachments/assets/e91c1ce5-8e20-40ae-9118-f9a88b9c102f" />
 
 
-2. Double-click the downloaded `.zip` file to extract `J code's.app`.
+2. Double-click the downloaded `.zip` file to extract **`J Codes.app`**.
 <img width="466.5" height="292" alt="image" src="https://github.com/user-attachments/assets/8bee5b68-d1e6-4842-a768-3d41d23dea18" />
 
-3. Drag and drop **`J code's.app`** into your `/Applications` folder.
+3. Drag and drop **`J Codes.app`** into your `/Applications` folder.
 <img width="466.5" height="292" alt="image" src="https://github.com/user-attachments/assets/00c47cde-6bd0-4bad-a368-3cf285565dba" />
 
-4. **First Launch Note (Gatekeeper):** If macOS displays *"Apple cannot check it for malicious software"* or *"App is damaged"*:
-   - Open **Terminal** and run:
-     ```bash
-     xattr -cr "/Applications/J code's.app"
-     ```
-   - *Or* Right-click **`J code's.app`** in Finder and click **Open**, then click **Open** in the dialog.
+4. **First Launch Note (Gatekeeper):** The app is not yet signed with an Apple Developer ID, so macOS may say *"J Codes is damaged and can't be opened"* or *"Apple cannot check it for malicious software"*. The download is fine — open **Terminal** and run:
+   ```bash
+   xattr -cr "/Applications/J Codes.app" && codesign --force --deep --sign - "/Applications/J Codes.app"
+   ```
+   Then open J Codes normally. You need to do this again after installing each new version.
+
+   > ⚠️ The app name is **`J Codes.app`** (capital **C**, no apostrophe). Running the command with any other name does nothing. Tip: type the command up to the first `"`, then drag the app from Finder into Terminal to paste its exact path.
+   >
+   > Running only `xattr -cr` is **not enough** on Apple Silicon — the `codesign` part is what fixes the "damaged" error.
 
 
 <img width="466.5" height="292" alt="Group 1" src="https://github.com/user-attachments/assets/1ea8d306-f3e1-4977-a14a-75808585ffdd" />
